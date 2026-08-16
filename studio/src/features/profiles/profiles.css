@@ -47,3 +47,6 @@
 .profile-add .ui-button {
   width: 100%;
 }
+.profile-rail-title { display: grid; align-content: center; gap: 1px; height: 46px; }
+.profile-rail-title small { min-width: 0; color: var(--muted); font-size: 9px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.profile-empty { margin: 12px 8px; color: var(--muted); font-size: 11px; line-height: 1.4; }

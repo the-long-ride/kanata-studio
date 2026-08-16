@@ -2,7 +2,9 @@ use std::{ffi::OsString, os::windows::ffi::OsStringExt};
 
 use windows_sys::Win32::{
     Foundation::{CloseHandle, MAX_PATH},
-    System::Threading::{OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW},
+    System::Threading::{
+        OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW,
+    },
     UI::WindowsAndMessaging::{
         GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId,
     },
@@ -19,18 +21,24 @@ impl ActiveAppProvider for WindowsActiveApp {
         unsafe {
             let window = GetForegroundWindow();
             if window == 0 {
-                return Err(PlatformError::Unavailable("no foreground window".to_string()));
+                return Err(PlatformError::Unavailable(
+                    "no foreground window".to_string(),
+                ));
             }
 
             let mut pid = 0;
             GetWindowThreadProcessId(window, &mut pid);
             if pid == 0 {
-                return Err(PlatformError::Unavailable("foreground PID unavailable".to_string()));
+                return Err(PlatformError::Unavailable(
+                    "foreground PID unavailable".to_string(),
+                ));
             }
 
             let process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
             if process == 0 {
-                return Err(PlatformError::Unavailable("cannot query foreground process".to_string()));
+                return Err(PlatformError::Unavailable(
+                    "cannot query foreground process".to_string(),
+                ));
             }
 
             let mut buffer = vec![0u16; MAX_PATH as usize * 4];
@@ -38,7 +46,9 @@ impl ActiveAppProvider for WindowsActiveApp {
             let ok = QueryFullProcessImageNameW(process, 0, buffer.as_mut_ptr(), &mut len);
             CloseHandle(process);
             if ok == 0 {
-                return Err(PlatformError::Unavailable("cannot read process path".to_string()));
+                return Err(PlatformError::Unavailable(
+                    "cannot read process path".to_string(),
+                ));
             }
             buffer.truncate(len as usize);
             let path = OsString::from_wide(&buffer);

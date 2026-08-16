@@ -5,16 +5,15 @@ use thiserror::Error;
 use crate::{
     app_state::AppState,
     compiler::{
-        compile_resolved,
+        CompileContext, CompiledConfig, compile_resolved,
         device_scope::EngineDeviceScope,
-        mac_device::{compile_device_aware, DeviceResolved},
-        CompileContext, CompiledConfig,
+        mac_device::{DeviceResolved, compile_device_aware},
     },
-    domain::{resolve_profile, ProfileSource, ResolutionContext},
+    domain::{ProfileSource, ResolutionContext, resolve_profile},
     engine::{
-        plan_engine_topology, EngineId, EngineSpec, EngineState, EngineSupervisor, EngineTopology,
+        EngineId, EngineSpec, EngineState, EngineSupervisor, EngineTopology, plan_engine_topology,
     },
-    storage::profile_store::write_atomic,
+    storage::{StorageError, profile_store::write_atomic},
     validation::validate_kbd,
 };
 
@@ -28,8 +27,8 @@ pub enum RuntimeApplyError {
     Compile(String),
     #[error("invalid generated Kanata config for {0}: {1}")]
     InvalidConfig(String, String),
-    #[error("runtime I/O: {0}")]
-    Io(#[from] std::io::Error),
+    #[error("runtime storage: {0}")]
+    Storage(#[from] StorageError),
     #[error("engine: {0}")]
     Engine(String),
 }
@@ -58,7 +57,10 @@ pub fn apply_current_context(state: &AppState) -> Result<(), RuntimeApplyError> 
     let statuses = state.supervisor.status();
 
     if topology_changed {
-        for status in statuses.iter().filter(|status| status.state != EngineState::Stopped) {
+        for status in statuses
+            .iter()
+            .filter(|status| status.state != EngineState::Stopped)
+        {
             let _ = state.supervisor.stop(&EngineId(status.id.clone()));
         }
     }
@@ -70,7 +72,9 @@ pub fn apply_current_context(state: &AppState) -> Result<(), RuntimeApplyError> 
                 .iter()
                 .any(|status| status.id == item.spec.id.0 && status.state == EngineState::Running);
         let result = if running {
-            state.supervisor.reload(&item.spec.id, &item.spec.config_path)
+            state
+                .supervisor
+                .reload(&item.spec.id, &item.spec.config_path)
         } else {
             state.supervisor.start(item.spec.clone()).map(|_| ())
         };
@@ -90,8 +94,7 @@ pub fn apply_current_context(state: &AppState) -> Result<(), RuntimeApplyError> 
         );
         state
             .recovery
-            .write_last_known_good(&item.spec.id.0, &item.compiled.text)
-            .map_err(|error| RuntimeApplyError::Io(error))?;
+            .write_last_known_good(&item.spec.id.0, &item.compiled.text)?;
     }
 
     *state.topology_signature.write() = Some(signature);
@@ -127,7 +130,13 @@ fn prepare_engines(
     for mut spec in topology.engines {
         spec.config_path = state.paths.runtime(&spec.id.0);
         let compiled = if matches!(spec.device_scope, EngineDeviceScope::MacDeviceAware(_)) {
-            compile_mac(state, profiles, &spec.device_scope, app.as_ref(), settings.ui_mode.clone())?
+            compile_mac(
+                state,
+                profiles,
+                &spec.device_scope,
+                app.as_ref(),
+                settings.ui_mode.clone(),
+            )?
         } else {
             let device_id = included_device_id(&spec.device_scope);
             let resolved = resolve_profile(
@@ -154,7 +163,9 @@ fn prepare_engines(
         if !validation.ok {
             return Err(RuntimeApplyError::InvalidConfig(
                 spec.id.0.clone(),
-                validation.message.unwrap_or_else(|| "unknown parser error".into()),
+                validation
+                    .message
+                    .unwrap_or_else(|| "unknown parser error".into()),
             ));
         }
         let profile_label = app.as_ref().map(|active| active.executable.clone());
@@ -248,15 +259,20 @@ fn included_device_id(scope: &EngineDeviceScope) -> Option<&str> {
 fn topology_signature(prepared: &[PreparedEngine]) -> String {
     prepared
         .iter()
-        .map(|item| format!("{}:{:?}:{:?}", item.spec.id.0, item.spec.backend, item.spec.device_scope))
+        .map(|item| {
+            format!(
+                "{}:{:?}:{:?}",
+                item.spec.id.0, item.spec.backend, item.spec.device_scope
+            )
+        })
         .collect::<Vec<_>>()
         .join("|")
 }
 
 fn restore_last_known_good(state: &AppState, id: &EngineId, runtime_path: &Path) {
-    if let Ok(Some(text)) = state.recovery.read_last_known_good(&id.0) {
-        if write_atomic(runtime_path, &text).is_ok() {
-            let _ = state.supervisor.reload(id, runtime_path);
-        }
+    if let Ok(Some(text)) = state.recovery.read_last_known_good(&id.0)
+        && write_atomic(runtime_path, &text).is_ok()
+    {
+        let _ = state.supervisor.reload(id, runtime_path);
     }
 }

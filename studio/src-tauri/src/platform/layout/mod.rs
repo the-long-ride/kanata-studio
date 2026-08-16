@@ -27,6 +27,14 @@ pub fn detect_generic(device: &KeyboardDevice) -> LayoutDetection {
         };
     }
 
+    if device.layout != KeyboardLayout::Unknown {
+        return LayoutDetection {
+            layout: device.layout.clone(),
+            confidence: DetectionConfidence::Medium,
+            reason: "device capabilities".into(),
+        };
+    }
+
     let name = device.name.to_lowercase();
     if name.contains("jis") || name.contains("japanese") {
         LayoutDetection {

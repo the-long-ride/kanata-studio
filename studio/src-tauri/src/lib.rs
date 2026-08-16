@@ -14,8 +14,11 @@ pub mod validation;
 
 use std::sync::Arc;
 
+use storage::{
+    JsonKeyboardStore, JsonProfileStore, ProfileRepository, RecoveryStore, SettingsStore,
+    StudioPaths,
+};
 use tauri::{Manager, WindowEvent};
-use storage::{JsonProfileStore, ProfileRepository, RecoveryStore, SettingsStore, StudioPaths};
 
 pub fn run() {
     let builder = tauri::Builder::default()
@@ -24,7 +27,6 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--background"]),
@@ -40,16 +42,21 @@ pub fn run() {
 
             let profile_store = JsonProfileStore::new(paths.clone());
             let settings_store = SettingsStore::new(paths.clone());
-            let profiles = profile_store.load_all().map_err(|error| error.to_string())?;
+            let keyboard_store = JsonKeyboardStore::new(paths.clone());
+            let profiles = profile_store
+                .load_all()
+                .map_err(|error| error.to_string())?;
             let settings = settings_store.load().map_err(|error| error.to_string())?;
+            let configured_keyboards = keyboard_store
+                .load_all()
+                .map_err(|error| error.to_string())?;
             let mut devices = platform::devices::DeviceProvider::list_keyboards(
                 &platform::devices::SystemDeviceProvider,
             )
             .unwrap_or_default();
-            platform::devices::apply_layouts(
-                &mut devices,
-                &settings.device_layout_overrides,
-            );
+            platform::devices::apply_layouts(&mut devices, &settings.device_layout_overrides);
+            platform::devices::apply_configured_layouts(&mut devices, &configured_keyboards);
+            platform::devices::detect_layouts(&mut devices);
             let mut capabilities = platform::capabilities::current_capabilities(
                 platform::capabilities::windows_interception_available(),
             );
@@ -60,10 +67,12 @@ pub fn run() {
                 profiles: parking_lot::RwLock::new(profiles),
                 settings: parking_lot::RwLock::new(settings.clone()),
                 devices: parking_lot::RwLock::new(devices),
+                configured_keyboards: parking_lot::RwLock::new(configured_keyboards),
                 capabilities: parking_lot::RwLock::new(capabilities),
                 supervisor: Arc::clone(&supervisor),
                 paths: paths.clone(),
                 profile_store,
+                keyboard_store,
                 settings_store,
                 recovery: RecoveryStore::new(paths),
                 health: parking_lot::RwLock::new(if settings.remapping_enabled {
@@ -78,7 +87,7 @@ pub fn run() {
             });
 
             tray::build(app.handle())?;
-            if settings.remapping_enabled {
+            if settings.remapping_enabled && settings.onboarding_completed {
                 let state = app.state::<app_state::AppState>();
                 if let Err(error) = runtime::apply_current_context(&state) {
                     *state.last_runtime_error.write() = Some(error.to_string());
@@ -89,10 +98,10 @@ pub fn run() {
             }
             runtime::start_watchers(app.handle().clone());
 
-            if startup::is_background_launch() {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.hide();
-                }
+            if startup::is_background_launch()
+                && let Some(window) = app.get_webview_window("main")
+            {
+                let _ = window.hide();
             }
             Ok(())
         })
@@ -113,10 +122,15 @@ pub fn run() {
             commands::preview_profile,
             commands::read_runtime_config,
             commands::list_keyboards,
+            commands::configure_keyboard,
+            commands::update_configured_keyboard,
+            commands::copy_keyboard_configuration,
             commands::set_remapping_enabled,
             commands::restart_engines,
             commands::set_manual_profile,
             commands::update_settings,
+            commands::set_start_with_system,
+            commands::apply_runtime,
             commands::open_logs,
         ]);
 

@@ -1,12 +1,18 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use kanata_studio::{
-    domain::{global_profile, UiMode},
-    storage::{JsonProfileStore, ProfileRepository, RecoveryStore, SettingsStore, StudioPaths, write_atomic},
+    domain::{UiMode, global_profile},
+    storage::{
+        JsonProfileStore, ProfileRepository, RecoveryStore, SettingsStore, StudioPaths,
+        write_atomic,
+    },
 };
 
 fn temp_paths(label: &str) -> StudioPaths {
-    let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
     StudioPaths::new(std::env::temp_dir().join(format!(
         "kanata-studio-test-{label}-{}-{nonce}",
         std::process::id()
@@ -48,7 +54,10 @@ fn recovery_store_is_optional_then_roundtrips_last_known_good() {
     let store = RecoveryStore::new(paths.clone());
     assert_eq!(store.read_last_known_good("all").unwrap(), None);
     store.write_last_known_good("all", "valid config").unwrap();
-    assert_eq!(store.read_last_known_good("all").unwrap().as_deref(), Some("valid config"));
+    assert_eq!(
+        store.read_last_known_good("all").unwrap().as_deref(),
+        Some("valid config")
+    );
     std::fs::remove_dir_all(paths.root).unwrap();
 }
 

@@ -18,18 +18,24 @@ export function RawEditor({
 }) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | undefined>(undefined);
+  const initialValue = useRef(value);
   const validateRef = useRef(onValidate);
   const applyRef = useRef(onApply);
   const [diagnostics, setDiagnostics] = useState<ValidationResult>({ ok: true });
 
-  validateRef.current = onValidate;
-  applyRef.current = onApply;
+  useEffect(() => {
+    validateRef.current = onValidate;
+  }, [onValidate]);
+
+  useEffect(() => {
+    applyRef.current = onApply;
+  }, [onApply]);
 
   useEffect(() => {
     if (!host.current) return;
     let timer: number | undefined;
     const state = EditorState.create({
-      doc: value,
+      doc: initialValue.current,
       extensions: [
         kanataLanguage,
         autocompletion({ override: [kanataCompletions] }),

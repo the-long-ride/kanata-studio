@@ -4,8 +4,8 @@ use sha2::{Digest, Sha256};
 use winapi::{
     shared::minwindef::{PUINT, UINT},
     um::winuser::{
-        GetRawInputDeviceInfoW, GetRawInputDeviceList, RAWINPUTDEVICELIST, RIDI_DEVICENAME,
-        RIM_TYPEKEYBOARD,
+        GetRawInputDeviceInfoW, GetRawInputDeviceList, RAWINPUTDEVICELIST, RID_DEVICE_INFO,
+        RIDI_DEVICEINFO, RIDI_DEVICENAME, RIM_TYPEKEYBOARD,
     },
 };
 
@@ -55,7 +55,7 @@ pub fn list() -> Result<Vec<KeyboardDevice>, PlatformError> {
                     vendor_id,
                     product_id,
                     path: Some(path),
-                    layout: KeyboardLayout::Unknown,
+                    layout: detected_layout(raw),
                     manual_layout: None,
                 });
             }
@@ -64,29 +64,58 @@ pub fn list() -> Result<Vec<KeyboardDevice>, PlatformError> {
     }
 }
 
+fn detected_layout(device: &RAWINPUTDEVICELIST) -> KeyboardLayout {
+    unsafe {
+        let mut info = mem::zeroed::<RID_DEVICE_INFO>();
+        info.cbSize = mem::size_of::<RID_DEVICE_INFO>() as u32;
+        let mut size = mem::size_of::<RID_DEVICE_INFO>() as UINT;
+        let result = GetRawInputDeviceInfoW(
+            device.hDevice,
+            RIDI_DEVICEINFO,
+            (&mut info as *mut RID_DEVICE_INFO).cast(),
+            &mut size as PUINT,
+        );
+        if result == u32::MAX {
+            return KeyboardLayout::Unknown;
+        }
+        let keyboard = info.u.keyboard();
+        if keyboard.dwType == 0x7 {
+            return KeyboardLayout::Jis;
+        }
+        match keyboard.dwNumberOfKeysTotal {
+            101 | 104 => KeyboardLayout::Ansi,
+            102 | 105 => KeyboardLayout::Iso,
+            _ => KeyboardLayout::Unknown,
+        }
+    }
+}
+
 fn device_path(device: &RAWINPUTDEVICELIST) -> Option<String> {
     unsafe {
         let mut chars: UINT = 0;
-    GetRawInputDeviceInfoW(
-        device.hDevice,
-        RIDI_DEVICENAME,
-        ptr::null_mut(),
-        &mut chars as PUINT,
-    );
-    if chars == 0 {
-        return None;
-    }
-    let mut buffer = vec![0u16; chars as usize + 1];
-    let result = GetRawInputDeviceInfoW(
-        device.hDevice,
-        RIDI_DEVICENAME,
-        buffer.as_mut_ptr().cast(),
-        &mut chars as PUINT,
-    );
-    if result == u32::MAX {
-        return None;
-    }
-    let end = buffer.iter().position(|value| *value == 0).unwrap_or(buffer.len());
+        GetRawInputDeviceInfoW(
+            device.hDevice,
+            RIDI_DEVICENAME,
+            ptr::null_mut(),
+            &mut chars as PUINT,
+        );
+        if chars == 0 {
+            return None;
+        }
+        let mut buffer = vec![0u16; chars as usize + 1];
+        let result = GetRawInputDeviceInfoW(
+            device.hDevice,
+            RIDI_DEVICENAME,
+            buffer.as_mut_ptr().cast(),
+            &mut chars as PUINT,
+        );
+        if result == u32::MAX {
+            return None;
+        }
+        let end = buffer
+            .iter()
+            .position(|value| *value == 0)
+            .unwrap_or(buffer.len());
         Some(String::from_utf16_lossy(&buffer[..end]))
     }
 }
@@ -106,7 +135,10 @@ fn friendly_name(path: &str) -> String {
 
 fn parse_vid_pid(path: &str) -> (Option<u16>, Option<u16>) {
     let upper = path.to_ascii_uppercase();
-    (parse_hex_after(&upper, "VID_"), parse_hex_after(&upper, "PID_"))
+    (
+        parse_hex_after(&upper, "VID_"),
+        parse_hex_after(&upper, "PID_"),
+    )
 }
 
 fn parse_hex_after(value: &str, marker: &str) -> Option<u16> {

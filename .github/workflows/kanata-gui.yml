@@ -1,0 +1,267 @@
+name: GUI
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_installers:
+        description: Build and upload native GUI installers
+        required: true
+        type: boolean
+        default: true
+  pull_request:
+    paths:
+      - 'studio/**'
+      - 'src/**'
+      - 'parser/**'
+      - 'tcp_protocol/**'
+      - 'keyberon/**'
+      - 'interception/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/kanata-gui.yml'
+  push:
+    branches: [main]
+    tags: ['gui-v*']
+    paths:
+      - 'studio/**'
+      - 'src/**'
+      - 'parser/**'
+      - 'tcp_protocol/**'
+      - 'keyberon/**'
+      - 'interception/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/kanata-gui.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gui-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' && !startsWith(github.ref, 'refs/tags/') }}
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -Dwarnings
+
+jobs:
+  frontend:
+    name: Frontend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: studio
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Verify frontend toolchain compatibility
+        run: pnpm test:toolchain
+
+      - name: Install frontend dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Test LOC guard
+        run: pnpm test:lines
+
+      - name: Test profile/device rules
+        run: pnpm test:rules
+
+      - name: Test Studio runtime/build configuration
+        run: pnpm test:config
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Enforce LOC limits
+        run: pnpm lint:lines
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Run frontend and Tauri IPC tests
+        run: pnpm test
+
+      - name: Build frontend
+        run: pnpm build
+
+  native:
+    name: Tauri tests (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+            studio/src-tauri -> studio/src-tauri/target
+
+      - name: Install Linux Tauri dependencies
+        if: runner.os == 'Linux'
+        run: >-
+          sudo apt-get update &&
+          sudo apt-get install -y
+          libwebkit2gtk-4.1-dev
+          libappindicator3-dev
+          librsvg2-dev
+          patchelf
+
+      - name: Check Rust formatting
+        if: runner.os == 'Linux'
+        run: cargo fmt --all --check
+
+      - name: Set macOS deployment target
+        if: runner.os == 'macOS'
+        shell: bash
+        run: echo "MACOSX_DEPLOYMENT_TARGET=10.15" >> "$GITHUB_ENV"
+
+      - name: Prepare Tauri test sidecar placeholder
+        shell: bash
+        run: |
+          mkdir -p studio/src-tauri/binaries
+          suffix=""
+          if [[ "${{ matrix.target }}" == *windows* ]]; then
+            suffix=".exe"
+          fi
+          printf '' > "studio/src-tauri/binaries/kanata-engine-${{ matrix.target }}${suffix}"
+          if [[ "${{ matrix.target }}" == *windows* ]]; then
+            printf '' > "studio/src-tauri/binaries/kanata-engine-interception-${{ matrix.target }}.exe"
+          fi
+
+      - name: Run Tauri/native tests
+        run: cargo test -p kanata-studio --all-targets --target ${{ matrix.target }}
+
+      - name: Run Tauri/native Clippy
+        run: cargo clippy -p kanata-studio --all-targets --target ${{ matrix.target }} -- -D warnings
+
+  installers:
+    name: Installer (${{ matrix.target }})
+    needs: [frontend, native]
+    if: >-
+      ${{ startsWith(github.ref, 'refs/tags/gui-v') ||
+          (github.event_name == 'workflow_dispatch' && inputs.build_installers) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+            studio/src-tauri -> studio/src-tauri/target
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Install Linux Tauri dependencies
+        if: runner.os == 'Linux'
+        run: >-
+          sudo apt-get update &&
+          sudo apt-get install -y
+          libwebkit2gtk-4.1-dev
+          libappindicator3-dev
+          librsvg2-dev
+          patchelf
+
+      - name: Install frontend dependencies
+        run: pnpm install --no-frozen-lockfile
+        working-directory: studio
+
+      - name: Set macOS deployment target
+        if: runner.os == 'macOS'
+        shell: bash
+        run: echo "MACOSX_DEPLOYMENT_TARGET=10.15" >> "$GITHUB_ENV"
+
+      - name: Build bundled Kanata sidecar
+        run: pnpm sidecars
+        working-directory: studio
+        env:
+          TARGET: ${{ matrix.target }}
+
+      - name: Build Tauri bundles
+        run: pnpm tauri build --target ${{ matrix.target }}
+        working-directory: studio
+
+      - name: Verify bundle directory
+        shell: bash
+        run: |
+          test -d target/${{ matrix.target }}/release/bundle || \
+            test -d studio/src-tauri/target/${{ matrix.target }}/release/bundle
+
+      - name: Upload GUI installers
+        uses: actions/upload-artifact@v7
+        with:
+          name: kanata-gui-${{ matrix.target }}-${{ github.sha }}
+          path: |
+            target/${{ matrix.target }}/release/bundle/**
+            studio/src-tauri/target/${{ matrix.target }}/release/bundle/**
+          if-no-files-found: error
+          retention-days: 14

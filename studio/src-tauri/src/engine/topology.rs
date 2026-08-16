@@ -40,15 +40,12 @@ pub fn plan_engine_topology(
             DeviceTarget::Device { id } => Some(id.clone()),
             DeviceTarget::All => None,
         })
+        .filter(|id| devices.iter().any(|device| device.id == *id))
         .collect::<std::collections::BTreeSet<_>>();
 
     if target_ids.is_empty() {
         return Ok(EngineTopology {
-            engines: vec![spec(
-                "all",
-                EngineBackend::Standard,
-                EngineDeviceScope::All,
-            )],
+            engines: vec![spec("all", EngineBackend::Standard, EngineDeviceScope::All)],
             requires_restart: false,
         });
     }
@@ -61,15 +58,10 @@ pub fn plan_engine_topology(
         DeviceMappingCapability::Available => {}
     }
 
-    let mut targets = Vec::new();
-    for id in target_ids {
-        let device = devices
-            .iter()
-            .find(|device| device.id == id)
-            .cloned()
-            .ok_or_else(|| CapabilityError::UnknownDevice(id.clone()))?;
-        targets.push(device);
-    }
+    let targets = target_ids
+        .iter()
+        .filter_map(|id| devices.iter().find(|device| device.id == *id).cloned())
+        .collect::<Vec<_>>();
 
     let engines = match capabilities.platform {
         Platform::Macos => vec![spec(
@@ -149,7 +141,10 @@ mod tests {
         let topology = plan_engine_topology(
             &[global_profile()],
             &[],
-            &capabilities(Platform::Windows, DeviceMappingCapability::RequiresWindowsInterception),
+            &capabilities(
+                Platform::Windows,
+                DeviceMappingCapability::RequiresWindowsInterception,
+            ),
         )
         .unwrap();
         assert_eq!(topology.engines.len(), 1);

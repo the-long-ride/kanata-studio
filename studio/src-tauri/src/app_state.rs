@@ -3,20 +3,22 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 
 use crate::{
-    domain::{CapabilitySet, KeyboardDevice, StudioProfile, StudioSettings},
+    domain::{CapabilitySet, ConfiguredKeyboard, KeyboardDevice, StudioProfile, StudioSettings},
     engine::{EngineStatus, LocalSupervisor, RuntimeHealth},
     platform::active_app::ActiveApp,
-    storage::{JsonProfileStore, RecoveryStore, SettingsStore, StudioPaths},
+    storage::{JsonKeyboardStore, JsonProfileStore, RecoveryStore, SettingsStore, StudioPaths},
 };
 
 pub struct AppState {
     pub profiles: RwLock<Vec<StudioProfile>>,
     pub settings: RwLock<StudioSettings>,
     pub devices: RwLock<Vec<KeyboardDevice>>,
+    pub configured_keyboards: RwLock<Vec<ConfiguredKeyboard>>,
     pub capabilities: RwLock<CapabilitySet>,
     pub supervisor: Arc<LocalSupervisor>,
     pub paths: StudioPaths,
     pub profile_store: JsonProfileStore,
+    pub keyboard_store: JsonKeyboardStore,
     pub settings_store: SettingsStore,
     pub recovery: RecoveryStore,
     pub health: RwLock<RuntimeHealth>,

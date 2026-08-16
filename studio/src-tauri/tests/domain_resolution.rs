@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use kanata_studio::domain::{
-    global_profile, resolve_profile, ActionSpec, AppMatcher, DeviceTarget, ProfileSource,
-    ResolutionContext, StudioProfile, UiMode,
+    ActionSpec, AppMatcher, DeviceTarget, ProfileSource, ResolutionContext, StudioProfile, UiMode,
+    global_profile, resolve_profile,
 };
 
 fn key(value: &str) -> ActionSpec {
@@ -32,11 +32,7 @@ fn precedence_is_global_then_device_then_app_then_app_device() {
     let mut global = global_profile();
     map(&mut global, "caps", key("esc"));
 
-    let mut device = visual_profile(
-        "device",
-        None,
-        DeviceTarget::Device { id: "kbd".into() },
-    );
+    let mut device = visual_profile("device", None, DeviceTarget::Device { id: "kbd".into() });
     map(&mut device, "caps", key("tab"));
 
     let mut app = visual_profile("app", Some("code"), DeviceTarget::All);

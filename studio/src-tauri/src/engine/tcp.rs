@@ -5,9 +5,16 @@ use std::{
     time::{Duration, Instant},
 };
 
-use kanata_tcp_protocol::{ClientMessage, FakeKeyActionMessage, ServerMessage};
+use kanata_tcp_protocol::{ClientMessage, FakeKeyActionMessage, ServerMessage, ServerResponse};
 
 use super::EngineError;
+
+#[derive(serde::Deserialize)]
+#[serde(untagged)]
+enum WireMessage {
+    Message(ServerMessage),
+    Response(ServerResponse),
+}
 
 pub struct KanataTcpClient {
     reader: BufReader<TcpStream>,
@@ -50,16 +57,23 @@ impl KanataTcpClient {
     }
 
     pub fn read_message(&mut self) -> Result<ServerMessage, EngineError> {
-        let mut line = String::new();
-        let read = self.reader.read_line(&mut line)?;
-        if read == 0 {
-            return Err(EngineError::Protocol("Kanata TCP connection closed".into()));
+        loop {
+            let mut line = String::new();
+            let read = self.reader.read_line(&mut line)?;
+            if read == 0 {
+                return Err(EngineError::Protocol("Kanata TCP connection closed".into()));
+            }
+            match serde_json::from_str::<WireMessage>(line.trim())? {
+                WireMessage::Message(ServerMessage::Error { msg }) => {
+                    return Err(EngineError::Server(msg));
+                }
+                WireMessage::Message(message) => return Ok(message),
+                WireMessage::Response(response) => match response {
+                    ServerResponse::Ok => continue,
+                    ServerResponse::Error { msg } => return Err(EngineError::Server(msg)),
+                },
+            }
         }
-        let message = serde_json::from_str::<ServerMessage>(line.trim())?;
-        if let ServerMessage::Error { msg } = &message {
-            return Err(EngineError::Server(msg.clone()));
-        }
-        Ok(message)
     }
 
     pub fn hello(&mut self) -> Result<(), EngineError> {
@@ -81,8 +95,7 @@ impl KanataTcpClient {
         })?;
         loop {
             match self.read_message()? {
-                ServerMessage::ReloadResult { ok: true, .. }
-                | ServerMessage::ConfigFileReload { .. } => return Ok(()),
+                ServerMessage::ReloadResult { ok: true, .. } => return Ok(()),
                 ServerMessage::ReloadResult { ok: false, .. } => {
                     return Err(EngineError::Protocol("Kanata rejected reload".into()));
                 }
@@ -102,6 +115,63 @@ impl KanataTcpClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reload_waits_for_result_after_ack_and_notification() {
+        use std::{net::TcpListener, sync::mpsc, thread};
+
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let (notification_sent_tx, notification_sent_rx) = mpsc::channel();
+        let (allow_result_tx, allow_result_rx) = mpsc::channel();
+        let server = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut reader = BufReader::new(stream.try_clone().unwrap());
+            let mut request = String::new();
+            reader.read_line(&mut request).unwrap();
+            stream.write_all(&ServerResponse::Ok.as_bytes()).unwrap();
+            stream
+                .write_all(
+                    &ServerMessage::ConfigFileReload {
+                        new: "runtime.kbd".into(),
+                    }
+                    .as_bytes(),
+                )
+                .unwrap();
+            notification_sent_tx.send(()).unwrap();
+            allow_result_rx.recv().unwrap();
+            stream
+                .write_all(
+                    &ServerMessage::ReloadResult {
+                        ok: true,
+                        timeout_ms: None,
+                    }
+                    .as_bytes(),
+                )
+                .unwrap();
+        });
+
+        let (done_tx, done_rx) = mpsc::channel();
+        let client = thread::spawn(move || {
+            let mut client = KanataTcpClient::connect(port, Duration::from_secs(1)).unwrap();
+            let result = client
+                .reload_file(Path::new("runtime.kbd"))
+                .map_err(|error| error.to_string());
+            done_tx.send(result).unwrap();
+        });
+
+        notification_sent_rx
+            .recv_timeout(Duration::from_secs(1))
+            .unwrap();
+        assert!(done_rx.recv_timeout(Duration::from_millis(100)).is_err());
+        allow_result_tx.send(()).unwrap();
+        assert_eq!(
+            done_rx.recv_timeout(Duration::from_secs(1)).unwrap(),
+            Ok(())
+        );
+        client.join().unwrap();
+        server.join().unwrap();
+    }
 
     #[test]
     fn reload_message_keeps_wait_contract() {

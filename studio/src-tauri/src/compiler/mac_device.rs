@@ -2,13 +2,11 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use sha2::{Digest, Sha256};
 
-use crate::domain::{
-    ActionSpec, KeyboardDevice, Platform, ResolvedProfile,
-};
+use crate::domain::{ActionSpec, KeyboardDevice, Platform, ResolvedProfile};
 
 use super::{
-    basic::action_expression, device_scope::mac_device_blocks, CompiledConfig, CompileError,
-    StudioExternalAction,
+    CompileError, CompiledConfig, StudioExternalAction, basic::action_expression,
+    device_scope::mac_device_blocks,
 };
 
 pub struct DeviceResolved<'a> {
@@ -36,19 +34,11 @@ pub fn compile_device_aware(
 
     for key in keys {
         let fallback_action = fallback.mappings.get(&key);
-        let fallback_expr = expression(
-            &format!("{key}:fallback"),
-            fallback_action,
-            &mut external,
-        )?;
+        let fallback_expr = expression(&format!("{key}:fallback"), fallback_action, &mut external)?;
         let mut cases = Vec::new();
         for (index, entry) in device_profiles.iter().enumerate() {
             let action = entry.profile.mappings.get(&key).or(fallback_action);
-            let expr = expression(
-                &format!("{key}:{}", entry.device.id),
-                action,
-                &mut external,
-            )?;
+            let expr = expression(&format!("{key}:{}", entry.device.id), action, &mut external)?;
             if expr != fallback_expr {
                 cases.push(format!("((device-history {} 1)) {expr} break", index + 1));
             }
@@ -99,7 +89,9 @@ mod tests {
             contributing_profile_ids: vec![],
             mappings: BTreeMap::from([(
                 key.to_string(),
-                ActionSpec::Key { key: output.to_string() },
+                ActionSpec::Key {
+                    key: output.to_string(),
+                },
             )]),
             layers: vec![],
             raw_kbd: None,
@@ -121,7 +113,10 @@ mod tests {
         let special = resolved("caps", "tab");
         let compiled = compile_device_aware(
             &fallback,
-            &[DeviceResolved { device: &device, profile: &special }],
+            &[DeviceResolved {
+                device: &device,
+                profile: &special,
+            }],
         )
         .unwrap();
         assert!(compiled.text.contains("device-history 1 1"));

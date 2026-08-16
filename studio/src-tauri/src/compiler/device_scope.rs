@@ -45,7 +45,9 @@ pub fn defcfg_for_scope(platform: Platform, scope: &EngineDeviceScope) -> String
         }
         (Platform::Windows, EngineDeviceScope::IncludeDevice(device)) => {
             if let Some(bytes) = windows_hwid_bytes(device) {
-                lines.push(format!("  windows-interception-keyboard-hwids (\"{bytes}\")"));
+                lines.push(format!(
+                    "  windows-interception-keyboard-hwids (\"{bytes}\")"
+                ));
             }
         }
         (Platform::Windows, EngineDeviceScope::ExcludeDevices(devices)) => {
@@ -56,7 +58,9 @@ pub fn defcfg_for_scope(platform: Platform, scope: &EngineDeviceScope) -> String
                 .collect::<Vec<_>>()
                 .join(" ");
             if !values.is_empty() {
-                lines.push(format!("  windows-interception-keyboard-hwids-exclude ({values})"));
+                lines.push(format!(
+                    "  windows-interception-keyboard-hwids-exclude ({values})"
+                ));
             }
         }
         _ => {}

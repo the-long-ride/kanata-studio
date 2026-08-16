@@ -31,3 +31,5 @@ pub enum EngineError {
 pub use model::*;
 pub use recovery::RuntimeHealth;
 pub use supervisor::*;
+pub use tcp::KanataTcpClient;
+pub use topology::{EngineTopology, plan_engine_topology};

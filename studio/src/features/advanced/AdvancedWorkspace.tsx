@@ -1,4 +1,4 @@
-import { Code2, Eye, Plus, Wand2 } from 'lucide-react';
+import { Code2, Eye } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../../components/Button';
 import type { ActionSpec, KeyboardLayout, StudioProfile } from '../../lib/types';

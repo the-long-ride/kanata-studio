@@ -30,7 +30,7 @@ pub fn current_capabilities(interception_available: bool) -> CapabilitySet {
 pub fn windows_interception_available() -> bool {
     #[cfg(target_os = "windows")]
     unsafe {
-        use windows_sys::Win32::System::LibraryLoader::{FreeLibrary, LoadLibraryW};
+        use windows_sys::Win32::{Foundation::FreeLibrary, System::LibraryLoader::LoadLibraryW};
         let name = "interception.dll\0".encode_utf16().collect::<Vec<_>>();
         let module = LoadLibraryW(name.as_ptr());
         if module == 0 {

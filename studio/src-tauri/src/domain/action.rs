@@ -32,6 +32,13 @@ pub enum AdvancedActionSpec {
     Macro {
         actions: Vec<ActionSpec>,
     },
+    Multi {
+        actions: Vec<ActionSpec>,
+    },
+    TapDance {
+        timeout_ms: u16,
+        actions: Vec<ActionSpec>,
+    },
     LayerMomentary {
         layer: String,
     },
@@ -62,6 +69,9 @@ pub enum ActionSpec {
     },
     Media {
         action: MediaAction,
+    },
+    Delay {
+        ms: u16,
     },
     Disabled,
     Advanced {

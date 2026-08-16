@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use kanata_studio::{
-    compiler::{compile_resolved, device_scope::EngineDeviceScope, CompileContext},
+    compiler::{CompileContext, compile_resolved, device_scope::EngineDeviceScope},
     domain::{
         ActionSpec, AdvancedActionSpec, MediaAction, Modifier, Platform, ResolvedProfile,
         VisualLayer,
@@ -17,10 +17,16 @@ fn resolved(mappings: BTreeMap<String, ActionSpec>) -> ResolvedProfile {
     }
 }
 
-fn compile(platform: Platform, mappings: BTreeMap<String, ActionSpec>) -> kanata_studio::compiler::CompiledConfig {
+fn compile(
+    platform: Platform,
+    mappings: BTreeMap<String, ActionSpec>,
+) -> kanata_studio::compiler::CompiledConfig {
     compile_resolved(
         &resolved(mappings),
-        CompileContext { platform, device_scope: &EngineDeviceScope::All },
+        CompileContext {
+            platform,
+            device_scope: &EngineDeviceScope::All,
+        },
     )
     .unwrap()
 }
@@ -29,8 +35,19 @@ fn compile(platform: Platform, mappings: BTreeMap<String, ActionSpec>) -> kanata
 fn compiles_all_beginner_native_actions() {
     let mappings = BTreeMap::from([
         ("a".into(), ActionSpec::Key { key: "b".into() }),
-        ("c".into(), ActionSpec::Shortcut { modifiers: vec![Modifier::Ctrl, Modifier::Shift], key: "p".into() }),
-        ("f8".into(), ActionSpec::Media { action: MediaAction::PlayPause }),
+        (
+            "c".into(),
+            ActionSpec::Shortcut {
+                modifiers: vec![Modifier::Ctrl, Modifier::Shift],
+                key: "p".into(),
+            },
+        ),
+        (
+            "f8".into(),
+            ActionSpec::Media {
+                action: MediaAction::PlayPause,
+            },
+        ),
         ("f9".into(), ActionSpec::Disabled),
     ]);
     let compiled = compile(Platform::Linux, mappings);
@@ -43,9 +60,25 @@ fn compiles_all_beginner_native_actions() {
 #[test]
 fn external_beginner_actions_never_emit_shell_commands() {
     let mappings = BTreeMap::from([
-        ("f1".into(), ActionSpec::Text { text: "hello".into() }),
-        ("f2".into(), ActionSpec::LaunchApp { path: "/usr/bin/code".into(), args: vec![".".into()] }),
-        ("f3".into(), ActionSpec::OpenUrl { url: "https://example.com".into() }),
+        (
+            "f1".into(),
+            ActionSpec::Text {
+                text: "hello".into(),
+            },
+        ),
+        (
+            "f2".into(),
+            ActionSpec::LaunchApp {
+                path: "/usr/bin/code".into(),
+                args: vec![".".into()],
+            },
+        ),
+        (
+            "f3".into(),
+            ActionSpec::OpenUrl {
+                url: "https://example.com".into(),
+            },
+        ),
     ]);
     let compiled = compile(Platform::Linux, mappings);
     assert_eq!(compiled.action_bindings.len(), 3);
@@ -58,7 +91,12 @@ fn external_beginner_actions_never_emit_shell_commands() {
 fn text_uses_macos_paste_binding_on_macos() {
     let compiled = compile(
         Platform::Macos,
-        BTreeMap::from([("f1".into(), ActionSpec::Text { text: "hello".into() })]),
+        BTreeMap::from([(
+            "f1".into(),
+            ActionSpec::Text {
+                text: "hello".into(),
+            },
+        )]),
     );
     assert!(compiled.text.contains("studio-paste M-v"));
 }
@@ -74,7 +112,10 @@ fn raw_profile_is_passed_through_byte_for_byte() {
     };
     let compiled = compile_resolved(
         &profile,
-        CompileContext { platform: Platform::Windows, device_scope: &EngineDeviceScope::All },
+        CompileContext {
+            platform: Platform::Windows,
+            device_scope: &EngineDeviceScope::All,
+        },
     )
     .unwrap();
     assert_eq!(compiled.text, text);
@@ -92,8 +133,14 @@ fn visual_hash_is_stable_for_same_input() {
 #[test]
 fn invalid_key_atom_is_rejected() {
     let result = compile_resolved(
-        &resolved(BTreeMap::from([("bad key".into(), ActionSpec::Key { key: "esc".into() })])),
-        CompileContext { platform: Platform::Linux, device_scope: &EngineDeviceScope::All },
+        &resolved(BTreeMap::from([(
+            "bad key".into(),
+            ActionSpec::Key { key: "esc".into() },
+        )])),
+        CompileContext {
+            platform: Platform::Linux,
+            device_scope: &EngineDeviceScope::All,
+        },
     );
     assert!(result.is_err());
 }
@@ -102,28 +149,45 @@ fn invalid_key_atom_is_rejected() {
 fn advanced_layers_tap_hold_and_macro_compile() {
     let mut profile = resolved(BTreeMap::from([(
         "caps".into(),
-        ActionSpec::Advanced { action: AdvancedActionSpec::TapHold {
-            tap: Box::new(ActionSpec::Key { key: "esc".into() }),
-            hold: Box::new(ActionSpec::Advanced { action: AdvancedActionSpec::LayerMomentary { layer: "nav".into() } }),
-            timeout_ms: 180,
-        }},
+        ActionSpec::Advanced {
+            action: AdvancedActionSpec::TapHold {
+                tap: Box::new(ActionSpec::Key { key: "esc".into() }),
+                hold: Box::new(ActionSpec::Advanced {
+                    action: AdvancedActionSpec::LayerMomentary {
+                        layer: "nav".into(),
+                    },
+                }),
+                timeout_ms: 180,
+            },
+        },
     )]));
     profile.layers.push(VisualLayer {
         name: "nav".into(),
         mappings: BTreeMap::from([(
             "h".into(),
-            ActionSpec::Advanced { action: AdvancedActionSpec::Macro { actions: vec![
-                ActionSpec::Key { key: "left".into() },
-                ActionSpec::Key { key: "left".into() },
-            ]}},
+            ActionSpec::Advanced {
+                action: AdvancedActionSpec::Macro {
+                    actions: vec![
+                        ActionSpec::Key { key: "left".into() },
+                        ActionSpec::Key { key: "left".into() },
+                    ],
+                },
+            },
         )]),
     });
     let compiled = compile_resolved(
         &profile,
-        CompileContext { platform: Platform::Linux, device_scope: &EngineDeviceScope::All },
+        CompileContext {
+            platform: Platform::Linux,
+            device_scope: &EngineDeviceScope::All,
+        },
     )
     .unwrap();
-    assert!(compiled.text.contains("tap-hold 180 180 esc (layer-while-held nav)"));
+    assert!(
+        compiled
+            .text
+            .contains("tap-hold 180 180 esc (layer-while-held nav)")
+    );
     assert!(compiled.text.contains("deflayermap (nav)"));
     assert!(compiled.text.contains("(macro left left)"));
 }

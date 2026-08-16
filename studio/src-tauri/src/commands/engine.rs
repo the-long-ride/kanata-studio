@@ -6,7 +6,7 @@ use crate::{
     runtime::{apply_current_context, pause_all, resume_all},
 };
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn set_remapping_enabled(
     state: State<'_, AppState>,
     enabled: bool,
@@ -45,7 +45,7 @@ pub fn set_remapping_enabled(
     Ok(state.engine_statuses())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn restart_engines(state: State<'_, AppState>) -> Result<Vec<EngineStatus>, String> {
     let ids = state
         .engine_statuses()
@@ -61,17 +61,40 @@ pub fn restart_engines(state: State<'_, AppState>) -> Result<Vec<EngineStatus>, 
     Ok(state.engine_statuses())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn set_manual_profile(
     state: State<'_, AppState>,
     id: Option<String>,
 ) -> Result<Vec<EngineStatus>, String> {
-    if let Some(profile_id) = &id {
-        if !state.profiles.read().iter().any(|profile| &profile.id == profile_id) {
-            return Err("profile not found".into());
-        }
+    if let Some(profile_id) = &id
+        && !state
+            .profiles
+            .read()
+            .iter()
+            .any(|profile| &profile.id == profile_id)
+    {
+        return Err("profile not found".into());
     }
     *state.manual_profile_id.write() = id;
     apply_current_context(&state).map_err(|error| error.to_string())?;
     Ok(state.engine_statuses())
+}
+
+#[tauri::command(async)]
+pub fn apply_runtime(state: State<'_, AppState>) -> Result<Vec<EngineStatus>, String> {
+    match apply_current_context(&state) {
+        Ok(()) => {
+            *state.health.write() = RuntimeHealth::Running;
+            *state.last_runtime_error.write() = None;
+            Ok(state.engine_statuses())
+        }
+        Err(error) => {
+            let message = error.to_string();
+            *state.health.write() = RuntimeHealth::RecoveryRequired {
+                message: message.clone(),
+            };
+            *state.last_runtime_error.write() = Some(message.clone());
+            Err(message)
+        }
+    }
 }

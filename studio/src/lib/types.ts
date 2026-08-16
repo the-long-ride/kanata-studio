@@ -38,6 +38,9 @@ export type ActionSpec = {
     type: 'media';
     action: MediaAction;
 } | {
+    type: 'delay';
+    ms: number;
+} | {
     type: 'disabled';
 } | {
     type: 'advanced';
@@ -53,6 +56,13 @@ export type AdvancedActionSpec = {
     timeoutMs: number;
 } | {
     type: 'macro';
+    actions: ActionSpec[];
+} | {
+    type: 'multi';
+    actions: ActionSpec[];
+} | {
+    type: 'tapDance';
+    timeoutMs: number;
     actions: ActionSpec[];
 } | {
     type: 'layerMomentary';
@@ -93,6 +103,19 @@ export type KeyboardDevice = {
     layout: KeyboardLayout;
     manualLayout?: KeyboardLayout | null;
 };
+
+export type ConfiguredKeyboard = {
+    id: string;
+    name: string;
+    detectedName: string;
+    vendorId?: number | null;
+    productId?: number | null;
+    layoutOverride?: KeyboardLayout | null;
+};
+export type KeyboardConfigurationResult = {
+    keyboard: ConfiguredKeyboard;
+    profiles: StudioProfile[];
+};
 export type DeviceMappingCapability = 'Unavailable' | 'Available' | 'RequiresWindowsInterception';
 export type CapabilitySet = {
     platform: 'Windows' | 'Macos' | 'Linux';
@@ -129,6 +152,7 @@ export type BootstrapState = {
     profiles: StudioProfile[];
     settings: StudioSettings;
     devices: KeyboardDevice[];
+    configuredKeyboards: ConfiguredKeyboard[];
     capabilities: CapabilitySet;
     engineStatuses: EngineStatus[];
     activeProfileId: string;

@@ -1,1 +1,5 @@
-fn main() { kanata_studio::run(); }
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+fn main() {
+    kanata_studio::run();
+}

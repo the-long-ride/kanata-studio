@@ -56,7 +56,11 @@ fn restart(app: &AppHandle) {
 fn toggle_autostart(app: &AppHandle) {
     let manager = app.autolaunch();
     let enabled = manager.is_enabled().unwrap_or(false);
-    let _ = if enabled { manager.disable() } else { manager.enable() };
+    let _ = if enabled {
+        manager.disable()
+    } else {
+        manager.enable()
+    };
     let state = app.state::<AppState>();
     state.settings.write().start_with_system = !enabled;
     let settings = state.settings.read().clone();

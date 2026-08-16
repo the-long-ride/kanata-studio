@@ -2,16 +2,23 @@ pub mod events;
 pub mod menu;
 
 use tauri::{
+    AppHandle,
     menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
     tray::TrayIconBuilder,
-    AppHandle,
 };
 
 pub fn build(app: &AppHandle) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, "open", "Open Studio", true, None::<&str>)?;
     let pause = MenuItem::with_id(app, "pause", "Pause / resume remapping", true, None::<&str>)?;
     let restart = MenuItem::with_id(app, "restart", "Restart engine", true, None::<&str>)?;
-    let autostart = CheckMenuItem::with_id(app, "autostart", "Start with system", true, true, None::<&str>)?;
+    let autostart = CheckMenuItem::with_id(
+        app,
+        "autostart",
+        "Start with system",
+        true,
+        true,
+        None::<&str>,
+    )?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let separator = PredefinedMenuItem::separator(app)?;
     let menu = Menu::with_items(

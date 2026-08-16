@@ -43,6 +43,9 @@ mod tests {
     #[test]
     fn rejects_unscoped_messages() {
         let value = serde_json::json!(["other-app", "action", "abc123"]);
-        assert!(matches!(parse_action_id(&value), Err(ActionError::Malformed)));
+        assert!(matches!(
+            parse_action_id(&value),
+            Err(ActionError::Malformed)
+        ));
     }
 }

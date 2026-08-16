@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from 'vitest';
 import { clearMocks, mockIPC } from '@tauri-apps/api/mocks';
 import {
+  applyRuntime,
   convertProfileToRaw,
   createProfile,
   deleteProfile,
@@ -13,6 +14,7 @@ import {
   setManualProfile,
   setRawProfileText,
   setRemappingEnabled,
+  setStartWithSystem,
   updateProfile,
   updateSettings,
   validateRawProfile,
@@ -64,6 +66,8 @@ describe('Tauri IPC wrapper contract', () => {
     await setManualProfile('code');
     await setManualProfile();
     await updateSettings({ startWithSystem: false });
+    await setStartWithSystem(false);
+    await applyRuntime();
     await readRuntimeConfig('all');
     await openLogs();
 
@@ -75,6 +79,8 @@ describe('Tauri IPC wrapper contract', () => {
       { cmd: 'set_manual_profile', args: { id: 'code' } },
       { cmd: 'set_manual_profile', args: { id: null } },
       { cmd: 'update_settings', args: { input: { startWithSystem: false } } },
+      { cmd: 'set_start_with_system', args: { enabled: false } },
+      { cmd: 'apply_runtime', args: {} },
       { cmd: 'read_runtime_config', args: { engineId: 'all' } },
       { cmd: 'open_logs', args: {} },
     ]);

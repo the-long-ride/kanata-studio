@@ -1,4 +1,7 @@
-#![cfg_attr(feature = "gui", windows_subsystem = "windows")]
+#![cfg_attr(
+    any(feature = "gui", feature = "studio_sidecar"),
+    windows_subsystem = "windows"
+)]
 // disable default console for a Windows GUI app
 mod main_lib;
 

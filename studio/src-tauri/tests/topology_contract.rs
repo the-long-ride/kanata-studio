@@ -3,10 +3,13 @@ use std::collections::BTreeMap;
 use kanata_studio::{
     compiler::device_scope::EngineDeviceScope,
     domain::{
-        global_profile, AppMatcher, CapabilitySet, DeviceMappingCapability, DeviceTarget,
-        KeyboardDevice, KeyboardLayout, Platform,
+        AppMatcher, CapabilitySet, DeviceMappingCapability, DeviceTarget, KeyboardDevice,
+        KeyboardLayout, Platform, global_profile,
     },
-    engine::{topology::{plan_engine_topology, CapabilityError}, EngineBackend},
+    engine::{
+        EngineBackend,
+        topology::{CapabilityError, plan_engine_topology},
+    },
 };
 
 fn capabilities(platform: Platform, mapping: DeviceMappingCapability) -> CapabilitySet {
@@ -36,7 +39,10 @@ fn targeted(id: &str) -> kanata_studio::domain::StudioProfile {
     let mut profile = global_profile();
     profile.id = format!("app-{id}");
     profile.name = format!("App {id}");
-    profile.app_matcher = Some(AppMatcher { executable: "code".into(), window_title_contains: None });
+    profile.app_matcher = Some(AppMatcher {
+        executable: "code".into(),
+        window_title_contains: None,
+    });
     profile.device_target = DeviceTarget::Device { id: id.into() };
     profile
 }
@@ -46,7 +52,10 @@ fn all_keyboard_profiles_use_single_standard_engine_without_restart() {
     let topology = plan_engine_topology(
         &[global_profile()],
         &[],
-        &capabilities(Platform::Windows, DeviceMappingCapability::RequiresWindowsInterception),
+        &capabilities(
+            Platform::Windows,
+            DeviceMappingCapability::RequiresWindowsInterception,
+        ),
     )
     .unwrap();
     assert!(!topology.requires_restart);
@@ -59,7 +68,10 @@ fn windows_specific_device_requires_interception_when_missing() {
     let error = plan_engine_topology(
         &[global_profile(), targeted("kbd")],
         &[keyboard("kbd")],
-        &capabilities(Platform::Windows, DeviceMappingCapability::RequiresWindowsInterception),
+        &capabilities(
+            Platform::Windows,
+            DeviceMappingCapability::RequiresWindowsInterception,
+        ),
     )
     .unwrap_err();
     assert_eq!(error, CapabilityError::WindowsInterceptionRequired);
@@ -75,9 +87,20 @@ fn windows_specific_device_creates_interception_engine_and_fallback() {
     .unwrap();
     assert!(topology.requires_restart);
     assert_eq!(topology.engines.len(), 2);
-    assert!(topology.engines.iter().all(|engine| engine.backend == EngineBackend::WindowsInterception));
-    assert!(matches!(topology.engines[0].device_scope, EngineDeviceScope::IncludeDevice(_)));
-    assert!(matches!(topology.engines[1].device_scope, EngineDeviceScope::ExcludeDevices(_)));
+    assert!(
+        topology
+            .engines
+            .iter()
+            .all(|engine| engine.backend == EngineBackend::WindowsInterception)
+    );
+    assert!(matches!(
+        topology.engines[0].device_scope,
+        EngineDeviceScope::IncludeDevice(_)
+    ));
+    assert!(matches!(
+        topology.engines[1].device_scope,
+        EngineDeviceScope::ExcludeDevices(_)
+    ));
 }
 
 #[test]
@@ -89,7 +112,12 @@ fn linux_specific_device_creates_filtered_standard_engines() {
     )
     .unwrap();
     assert_eq!(topology.engines.len(), 2);
-    assert!(topology.engines.iter().all(|engine| engine.backend == EngineBackend::Standard));
+    assert!(
+        topology
+            .engines
+            .iter()
+            .all(|engine| engine.backend == EngineBackend::Standard)
+    );
 }
 
 #[test]
@@ -101,16 +129,25 @@ fn macos_specific_devices_use_one_device_aware_engine() {
     )
     .unwrap();
     assert_eq!(topology.engines.len(), 1);
-    assert!(matches!(topology.engines[0].device_scope, EngineDeviceScope::MacDeviceAware(_)));
+    assert!(matches!(
+        topology.engines[0].device_scope,
+        EngineDeviceScope::MacDeviceAware(_)
+    ));
 }
 
 #[test]
-fn unknown_target_device_fails_closed() {
-    let error = plan_engine_topology(
+fn disconnected_target_device_is_ignored() {
+    let topology = plan_engine_topology(
         &[global_profile(), targeted("missing")],
         &[keyboard("kbd")],
         &capabilities(Platform::Linux, DeviceMappingCapability::Available),
     )
-    .unwrap_err();
-    assert_eq!(error, CapabilityError::UnknownDevice("missing".into()));
+    .unwrap();
+    assert!(!topology.requires_restart);
+    assert_eq!(topology.engines.len(), 1);
+    assert_eq!(topology.engines[0].backend, EngineBackend::Standard);
+    assert!(matches!(
+        topology.engines[0].device_scope,
+        EngineDeviceScope::All
+    ));
 }

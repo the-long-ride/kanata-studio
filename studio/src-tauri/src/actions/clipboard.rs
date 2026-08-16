@@ -19,10 +19,8 @@ pub fn with_clipboard_text<T>(
 
     // Avoid overwriting content the user copied while the paste was in flight.
     let still_ours = clipboard.get_text().ok().as_deref() == Some(text);
-    if still_ours {
-        if let Some(previous) = previous_text {
-            let _ = clipboard.set_text(previous);
-        }
+    if still_ours && let Some(previous) = previous_text {
+        let _ = clipboard.set_text(previous);
     }
 
     result

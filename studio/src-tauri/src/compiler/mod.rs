@@ -85,7 +85,7 @@ pub fn compile_visual(
     }
 
     let mut text = device_scope::defcfg_for_scope(context.platform, context.device_scope);
-    if matches!(context.device_scope, EngineDeviceScope::MacDeviceAware(ref devices)) {
+    if let EngineDeviceScope::MacDeviceAware(devices) = context.device_scope {
         text.push_str(&device_scope::mac_device_blocks(devices));
     }
     text.push_str("(defsrc)\n\n(deflayermap (base)\n");

@@ -73,15 +73,15 @@ pub fn resolve_profile(
         .collect();
     candidates.sort_by_key(|(app, device, profile)| (*app, *device, profile.id.clone()));
 
-    if let Some((_, _, top)) = candidates.last() {
-        if let ProfileSource::Raw { kbd } = &top.source {
-            return Ok(ResolvedProfile {
-                contributing_profile_ids: vec![top.id.clone()],
-                mappings: BTreeMap::new(),
-                layers: Vec::new(),
-                raw_kbd: Some(kbd.clone()),
-            });
-        }
+    if let Some((_, _, top)) = candidates.last()
+        && let ProfileSource::Raw { kbd } = &top.source
+    {
+        return Ok(ResolvedProfile {
+            contributing_profile_ids: vec![top.id.clone()],
+            mappings: BTreeMap::new(),
+            layers: Vec::new(),
+            raw_kbd: Some(kbd.clone()),
+        });
     }
 
     let mut mappings = BTreeMap::new();

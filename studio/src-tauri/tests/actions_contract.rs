@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, sync::Mutex};
 
 use kanata_studio::{
-    actions::{dispatch_message, ActionError, ExternalActionExecutor},
+    actions::{ActionError, ExternalActionExecutor, dispatch_message},
     compiler::StudioExternalAction,
     engine::EngineId,
 };
@@ -17,14 +17,19 @@ impl ExternalActionExecutor for RecordingExecutor {
         engine_id: &EngineId,
         action: &StudioExternalAction,
     ) -> Result<(), ActionError> {
-        self.seen.lock().unwrap().push((engine_id.0.clone(), action.clone()));
+        self.seen
+            .lock()
+            .unwrap()
+            .push((engine_id.0.clone(), action.clone()));
         Ok(())
     }
 }
 
 #[test]
 fn registered_push_message_dispatches_exact_typed_action() {
-    let action = StudioExternalAction::OpenUrl { url: "https://example.com".into() };
+    let action = StudioExternalAction::OpenUrl {
+        url: "https://example.com".into(),
+    };
     let registry = BTreeMap::from([("abc".into(), action.clone())]);
     let executor = RecordingExecutor::default();
     dispatch_message(
@@ -37,7 +42,9 @@ fn registered_push_message_dispatches_exact_typed_action() {
     let seen = executor.seen.lock().unwrap();
     assert_eq!(seen.len(), 1);
     assert_eq!(seen[0].0, "all");
-    assert!(matches!(&seen[0].1, StudioExternalAction::OpenUrl { url } if url == "https://example.com"));
+    assert!(
+        matches!(&seen[0].1, StudioExternalAction::OpenUrl { url } if url == "https://example.com")
+    );
 }
 
 #[test]

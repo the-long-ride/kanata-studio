@@ -1,10 +1,19 @@
-import type { BootstrapState, KeyboardLayout } from '../../lib/types';
+import type { BootstrapState } from '../../lib/types';
+import type { KeyboardCatalogItem } from '../keyboards/keyboardCatalog';
 import { GeneralSettings } from './GeneralSettings';
 import { KeyboardSettings } from './KeyboardSettings';
 import { UpdatesSettings } from './UpdatesSettings';
-export function SettingsView({ state, onStart, onLayout, onUpdate }: {
-    state: BootstrapState;
-    onStart: (v: boolean) => void;
-    onLayout: (id: string, l: KeyboardLayout) => void;
-    onUpdate: () => void;
-}) { return <div style={{ padding: 16, display: 'grid', gap: 20 }}><GeneralSettings start={state.settings.startWithSystem} onStart={onStart}/><KeyboardSettings devices={state.devices} capabilities={state.capabilities} onLayout={onLayout}/><UpdatesSettings version={state.version} onCheck={onUpdate}/></div>; }
+
+export function SettingsView({ state, keyboards, onStart, onManageKeyboard, onUpdate }: {
+  state: BootstrapState;
+  keyboards: KeyboardCatalogItem[];
+  onStart: (value: boolean) => void;
+  onManageKeyboard: (id: string) => void;
+  onUpdate: () => void;
+}) {
+  return <div className="settings-page">
+    <GeneralSettings start={state.settings.startWithSystem} onStart={onStart} />
+    <KeyboardSettings keyboards={keyboards} onManage={onManageKeyboard} />
+    <UpdatesSettings version={state.version} onCheck={onUpdate} />
+  </div>;
+}

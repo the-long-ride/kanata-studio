@@ -1,3 +1,4 @@
+pub mod keyboard_store;
 pub mod paths;
 pub mod profile_store;
 pub mod recovery;
@@ -17,6 +18,7 @@ pub enum StorageError {
     StaleRevision,
 }
 
+pub use keyboard_store::*;
 pub use paths::*;
 pub use profile_store::*;
 pub use recovery::*;

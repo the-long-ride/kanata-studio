@@ -3,7 +3,7 @@ use tauri::State;
 
 use crate::{
     app_state::AppState,
-    domain::{validate_profile_set, StudioProfile},
+    domain::{StudioProfile, validate_profile_set},
     runtime::apply_current_context,
     storage::ProfileRepository,
     validation::ValidationResult,
@@ -12,6 +12,12 @@ use crate::{
 #[derive(Deserialize)]
 pub struct CreateProfileInput {
     pub profile: StudioProfile,
+    #[serde(default = "default_apply")]
+    pub apply: bool,
+}
+
+fn default_apply() -> bool {
+    true
 }
 
 #[derive(Deserialize)]
@@ -30,7 +36,7 @@ pub struct ApplyResult {
     pub applied: bool,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn create_profile(
     state: State<'_, AppState>,
     input: CreateProfileInput,
@@ -40,11 +46,15 @@ pub fn create_profile(
         return Err("profile id already exists".into());
     }
     next.push(input.profile.clone());
-    commit_profile_set(&state, next)?;
+    if input.apply {
+        commit_profile_set(&state, next)?;
+    } else {
+        persist_profile_set(&state, next)?;
+    }
     Ok(input.profile)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn update_profile(
     state: State<'_, AppState>,
     input: UpdateProfileInput,
@@ -75,7 +85,7 @@ pub fn update_profile(
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn delete_profile(state: State<'_, AppState>, id: String) -> Result<(), String> {
     if id == "global" {
         return Err("Global cannot be deleted".into());
@@ -89,10 +99,20 @@ pub fn delete_profile(state: State<'_, AppState>, id: String) -> Result<(), Stri
     commit_profile_set(&state, next)
 }
 
-pub(crate) fn commit_profile_set(
+pub(crate) fn persist_profile_set(
     state: &AppState,
     next: Vec<StudioProfile>,
 ) -> Result<(), String> {
+    validate_profile_set(&next).map_err(|error| error.to_string())?;
+    state
+        .profile_store
+        .save_all(&next)
+        .map_err(|error| error.to_string())?;
+    *state.profiles.write() = next;
+    Ok(())
+}
+
+pub(crate) fn commit_profile_set(state: &AppState, next: Vec<StudioProfile>) -> Result<(), String> {
     validate_profile_set(&next).map_err(|error| error.to_string())?;
     let previous = state.profiles.read().clone();
     *state.profiles.write() = next.clone();

@@ -27,7 +27,6 @@ impl RestartBudget {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

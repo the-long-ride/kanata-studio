@@ -260,3 +260,24 @@
   gap: 8px;
   margin-top: 4px;
 }
+
+.settings-page { padding: 16px; display: grid; gap: 22px; max-width: 760px; }
+.settings-section { display: grid; gap: 9px; }
+.settings-section h3 { margin: 0; }
+.settings-keyboard-list { display: grid; border-top: 1px solid var(--line); }
+.settings-keyboard-row {
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 90px auto;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.settings-keyboard-row > div { min-width: 0; display: grid; gap: 2px; }
+.settings-keyboard-row small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-keyboard-row > span { color: var(--muted); font-size: 11px; }
+@media (max-width: 860px) {
+  .brand { display: none; }
+  .topbar { gap: 7px; }
+  .status-inline { display: none; }
+}

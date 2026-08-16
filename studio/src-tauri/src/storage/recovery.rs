@@ -12,11 +12,7 @@ impl RecoveryStore {
         Self { paths }
     }
 
-    pub fn write_last_known_good(
-        &self,
-        id: &str,
-        config: &str,
-    ) -> Result<PathBuf, StorageError> {
+    pub fn write_last_known_good(&self, id: &str, config: &str) -> Result<PathBuf, StorageError> {
         let path = self.paths.recovery(id);
         write_atomic(&path, config)?;
         Ok(path)

@@ -40,6 +40,14 @@ pub fn action_expression(
             Ok(format!("{prefix}{key}"))
         }
         ActionSpec::Media { action } => Ok(media_key(action).into()),
+        ActionSpec::Delay { ms } => {
+            if *ms == 0 {
+                return Err(CompileError::InvalidExpression(
+                    "macro delay must be positive".into(),
+                ));
+            }
+            Ok(ms.to_string())
+        }
         ActionSpec::Disabled => Ok("XX".into()),
         ActionSpec::Text { text } => Ok(register_external(
             seed,
@@ -72,6 +80,11 @@ pub fn action_to_kbd(
     external: &mut Vec<(String, StudioExternalAction)>,
 ) -> Result<String, CompileError> {
     validate_atom(key)?;
+    if matches!(action, ActionSpec::Delay { .. }) {
+        return Err(CompileError::InvalidExpression(
+            "delay is only valid inside a macro".into(),
+        ));
+    }
     let expression = action_expression(key, action, platform, external, 0)?;
     Ok(format!("  {key} {expression}"))
 }

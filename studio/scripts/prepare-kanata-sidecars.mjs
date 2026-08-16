@@ -53,13 +53,13 @@ async function buildKanata(features, outputName) {
 }
 
 const standardFeatures = isWindowsTarget
-  ? 'cmd,tcp_server,winiov2,win_manifest'
+  ? 'cmd,tcp_server,winiov2,win_manifest,studio_sidecar'
   : 'cmd,tcp_server';
 await buildKanata(standardFeatures, 'kanata-engine');
 
 if (isWindowsTarget && target.startsWith('x86_64')) {
   await buildKanata(
-    'cmd,tcp_server,interception_driver,win_manifest',
+    'cmd,tcp_server,interception_driver,win_manifest,studio_sidecar',
     'kanata-engine-interception',
   );
 

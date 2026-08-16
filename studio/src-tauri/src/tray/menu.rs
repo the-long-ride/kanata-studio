@@ -7,12 +7,7 @@ pub struct TrayMenuModel {
     pub autostart: bool,
 }
 
-pub fn model(
-    running: bool,
-    profile: &str,
-    keyboard: &str,
-    autostart: bool,
-) -> TrayMenuModel {
+pub fn model(running: bool, profile: &str, keyboard: &str, autostart: bool) -> TrayMenuModel {
     TrayMenuModel {
         status: if running {
             "Remapping enabled"

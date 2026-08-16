@@ -7,7 +7,7 @@ pub mod windows;
 
 use std::collections::BTreeMap;
 
-use crate::domain::{KeyboardDevice, KeyboardLayout};
+use crate::domain::{ConfiguredKeyboard, KeyboardDevice, KeyboardLayout};
 
 use super::PlatformError;
 
@@ -30,15 +30,17 @@ impl DeviceProvider for SystemDeviceProvider {
     }
 }
 
-pub fn apply_layouts(
-    devices: &mut [KeyboardDevice],
-    overrides: &BTreeMap<String, KeyboardLayout>,
-) {
-    for device in devices {
+pub fn apply_layouts(devices: &mut [KeyboardDevice], overrides: &BTreeMap<String, KeyboardLayout>) {
+    for device in devices.iter_mut() {
         if let Some(layout) = overrides.get(&device.id) {
             device.manual_layout = Some(layout.clone());
         }
+    }
+    detect_layouts(devices);
+}
 
+pub fn detect_layouts(devices: &mut [KeyboardDevice]) {
+    for device in devices {
         #[cfg(target_os = "windows")]
         let detected = super::layout::windows::detect(device);
         #[cfg(target_os = "macos")]
@@ -47,5 +49,13 @@ pub fn apply_layouts(
         let detected = super::layout::linux::detect(device);
 
         device.layout = detected.layout;
+    }
+}
+
+pub fn apply_configured_layouts(devices: &mut [KeyboardDevice], configured: &[ConfiguredKeyboard]) {
+    for device in devices {
+        if let Some(saved) = configured.iter().find(|saved| saved.id == device.id) {
+            device.manual_layout = saved.layout_override.clone();
+        }
     }
 }

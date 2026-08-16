@@ -94,6 +94,20 @@ pub fn global_profile() -> StudioProfile {
     }
 }
 
+pub fn device_global_profile(device_id: &str, source: ProfileSource) -> StudioProfile {
+    StudioProfile {
+        id: format!("keyboard-{device_id}-global"),
+        revision: 0,
+        name: "Global".into(),
+        enabled: true,
+        app_matcher: None,
+        device_target: DeviceTarget::Device {
+            id: device_id.into(),
+        },
+        source,
+    }
+}
+
 pub fn validate_profile_set(profiles: &[StudioProfile]) -> Result<(), DomainError> {
     let global_count = profiles
         .iter()
@@ -114,7 +128,9 @@ pub fn validate_profile_set(profiles: &[StudioProfile]) -> Result<(), DomainErro
             return Err(DomainError::DuplicateScope(format!("{key:?}")));
         }
         if profile.name.trim().is_empty() || profile.id.trim().is_empty() {
-            return Err(DomainError::Invalid("profile id/name cannot be blank".into()));
+            return Err(DomainError::Invalid(
+                "profile id/name cannot be blank".into(),
+            ));
         }
     }
     Ok(())

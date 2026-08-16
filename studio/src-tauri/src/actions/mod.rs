@@ -3,6 +3,8 @@ pub mod dispatcher;
 pub mod launch;
 pub mod type_text;
 
+pub use dispatcher::dispatch_message;
+
 use std::sync::Weak;
 
 use thiserror::Error;

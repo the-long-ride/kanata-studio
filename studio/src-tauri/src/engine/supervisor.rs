@@ -10,15 +10,15 @@ use tauri::AppHandle;
 use tauri_plugin_shell::process::CommandChild;
 
 use crate::{
-    actions::{dispatch_message, DesktopExecutor, ExternalActionExecutor},
+    actions::{DesktopExecutor, ExternalActionExecutor, dispatch_message},
     compiler::StudioExternalAction,
 };
 
 use super::{
+    EngineError, KanataTcpClient,
     model::{EngineHandle, EngineId, EngineSpec, EngineState, EngineStatus},
     process::{spawn_sidecar, start_listener},
     recovery::RestartBudget,
-    EngineError, KanataTcpClient,
 };
 
 pub trait EngineSupervisor: Send + Sync {
@@ -53,9 +53,8 @@ impl LocalSupervisor {
             engines: Arc::new(Mutex::new(BTreeMap::new())),
             action_executor: RwLock::new(None),
         });
-        *supervisor.action_executor.write() = Some(Arc::new(DesktopExecutor::new(
-            Arc::downgrade(&supervisor),
-        )));
+        *supervisor.action_executor.write() =
+            Some(Arc::new(DesktopExecutor::new(Arc::downgrade(&supervisor))));
         supervisor
     }
 
@@ -106,12 +105,7 @@ impl LocalSupervisor {
         }
     }
 
-    pub(crate) fn handle_terminated(
-        self: &Arc<Self>,
-        id: &EngineId,
-        pid: u32,
-        code: Option<i32>,
-    ) {
+    pub(crate) fn handle_terminated(self: &Arc<Self>, id: &EngineId, pid: u32, code: Option<i32>) {
         let should_restart = {
             let mut engines = self.engines.lock();
             let Some(engine) = engines.get_mut(&id.0) else {
@@ -185,7 +179,8 @@ impl EngineSupervisor for LocalSupervisor {
     fn start(self: &Arc<Self>, spec: EngineSpec) -> Result<EngineHandle, EngineError> {
         let port = super::ports::allocate_loopback_port()?;
         let child = spawn_sidecar(self, &spec, port)?;
-        if let Err(error) = KanataTcpClient::connect_with_retry(port, Duration::from_secs(5))?.hello()
+        if let Err(error) =
+            KanataTcpClient::connect_with_retry(port, Duration::from_secs(5))?.hello()
         {
             let _ = child.kill();
             return Err(error);

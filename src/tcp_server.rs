@@ -51,6 +51,16 @@ fn to_action(val: FakeKeyActionMessage) -> FakeKeyAction {
     }
 }
 
+#[cfg(feature = "tcp_server")]
+fn wake_processing_loop(wakeup_channel: &Sender<KeyEvent>) -> bool {
+    let event = KeyEvent::new(kanata_parser::keys::OsCode::KEY_RESERVED, KeyValue::WakeUp);
+    if let Err(error) = wakeup_channel.send(event) {
+        log::error!("failed to wake processing loop: {error}");
+        return false;
+    }
+    true
+}
+
 /// Handles reload commands with optional wait/timeout for completion confirmation.
 /// Returns false if the connection should be closed, true otherwise.
 #[cfg(feature = "tcp_server")]
@@ -62,6 +72,7 @@ fn handle_reload_with_wait(
     kanata: &Arc<Mutex<Kanata>>,
     connections: &Connections,
     addr: &str,
+    wakeup_channel: &Sender<KeyEvent>,
 ) -> bool {
     let (response, reload_ok) = match kanata.lock().handle_client_command(reload_cmd) {
         Ok(_) => (ServerResponse::Ok, true),
@@ -73,6 +84,9 @@ fn handle_reload_with_wait(
         ),
     };
     if !send_response(stream, response, connections, addr) {
+        return false;
+    }
+    if reload_ok && !wake_processing_loop(wakeup_channel) {
         return false;
     }
 
@@ -190,6 +204,14 @@ impl TcpServer {
                                 match v {
                                     Ok(event) => {
                                         log::debug!("tcp server received command: {:?}", event);
+                                        let is_reload = matches!(
+                                            &event,
+                                            ClientMessage::Reload { .. }
+                                                | ClientMessage::ReloadNext { .. }
+                                                | ClientMessage::ReloadPrev { .. }
+                                                | ClientMessage::ReloadNum { .. }
+                                                | ClientMessage::ReloadFile { .. }
+                                        );
                                         match event {
                                             ClientMessage::ChangeLayer { new } => {
                                                 kanata.lock().change_layer(new);
@@ -352,6 +374,7 @@ impl TcpServer {
                                                     &kanata,
                                                     &connections,
                                                     &addr,
+                                                    &wakeup_channel,
                                                 ) {
                                                     break;
                                                 }
@@ -366,6 +389,7 @@ impl TcpServer {
                                                     &kanata,
                                                     &connections,
                                                     &addr,
+                                                    &wakeup_channel,
                                                 ) {
                                                     break;
                                                 }
@@ -380,6 +404,7 @@ impl TcpServer {
                                                     &kanata,
                                                     &connections,
                                                     &addr,
+                                                    &wakeup_channel,
                                                 ) {
                                                     break;
                                                 }
@@ -404,6 +429,7 @@ impl TcpServer {
                                                     &kanata,
                                                     &connections,
                                                     &addr,
+                                                    &wakeup_channel,
                                                 ) {
                                                     break;
                                                 }
@@ -428,18 +454,21 @@ impl TcpServer {
                                                     &kanata,
                                                     &connections,
                                                     &addr,
+                                                    &wakeup_channel,
                                                 ) {
                                                     break;
                                                 }
                                             }
                                         }
-                                        use kanata_parser::keys::*;
-                                        wakeup_channel
-                                            .send(KeyEvent::new(
-                                                OsCode::KEY_RESERVED,
-                                                KeyValue::WakeUp,
-                                            ))
-                                            .expect("write key event");
+                                        if !is_reload {
+                                            use kanata_parser::keys::*;
+                                            wakeup_channel
+                                                .send(KeyEvent::new(
+                                                    OsCode::KEY_RESERVED,
+                                                    KeyValue::WakeUp,
+                                                ))
+                                                .expect("write key event");
+                                        }
                                     }
                                     Err(e) => {
                                         log::warn!(

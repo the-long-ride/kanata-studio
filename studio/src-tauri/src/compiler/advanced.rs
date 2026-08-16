@@ -44,11 +44,19 @@ pub fn compile_advanced(
             Ok(format!("(tap-hold {timeout_ms} {timeout_ms} {tap} {hold})"))
         }
         AdvancedActionSpec::Macro { actions } => {
-            let mut parts = Vec::with_capacity(actions.len());
-            for (index, item) in actions.iter().enumerate() {
-                parts.push(nested(&format!("macro-{index}"), item, external)?);
-            }
+            let parts = compile_list("macro", actions, external, &nested)?;
             Ok(format!("(macro {})", parts.join(" ")))
+        }
+        AdvancedActionSpec::Multi { actions } => {
+            let parts = compile_list("multi", actions, external, &nested)?;
+            Ok(format!("(multi {})", parts.join(" ")))
+        }
+        AdvancedActionSpec::TapDance {
+            timeout_ms,
+            actions,
+        } => {
+            let parts = compile_list("tap-dance", actions, external, &nested)?;
+            Ok(format!("(tap-dance {timeout_ms} ({}))", parts.join(" ")))
         }
         AdvancedActionSpec::LayerMomentary { layer } => {
             Ok(format!("(layer-while-held {})", validate_atom(layer)?))
@@ -57,4 +65,24 @@ pub fn compile_advanced(
             Ok(format!("(layer-switch {})", validate_atom(layer)?))
         }
     }
+}
+
+fn compile_list<F>(
+    prefix: &str,
+    actions: &[ActionSpec],
+    external: &mut Vec<(String, StudioExternalAction)>,
+    nested: &F,
+) -> Result<Vec<String>, CompileError>
+where
+    F: Fn(
+        &str,
+        &ActionSpec,
+        &mut Vec<(String, StudioExternalAction)>,
+    ) -> Result<String, CompileError>,
+{
+    let mut parts = Vec::with_capacity(actions.len());
+    for (index, item) in actions.iter().enumerate() {
+        parts.push(nested(&format!("{prefix}-{index}"), item, external)?);
+    }
+    Ok(parts)
 }

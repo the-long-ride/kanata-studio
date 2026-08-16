@@ -1,4 +1,4 @@
-use super::{detect_generic, LayoutDetection};
+use super::{LayoutDetection, detect_generic};
 use crate::domain::KeyboardDevice;
 
 pub fn detect(device: &KeyboardDevice) -> LayoutDetection {

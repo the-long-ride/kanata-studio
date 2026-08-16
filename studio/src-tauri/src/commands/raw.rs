@@ -3,12 +3,12 @@ use tauri::State;
 
 use crate::{
     app_state::AppState,
-    compiler::{compile_resolved, CompileContext},
-    domain::{resolve_profile, DeviceTarget, ProfileSource, ResolutionContext},
-    validation::{validate_kbd, ValidationResult},
+    compiler::{CompileContext, compile_resolved},
+    domain::{DeviceTarget, ProfileSource, ResolutionContext, resolve_profile},
+    validation::{ValidationResult, validate_kbd},
 };
 
-use super::profiles::{commit_profile_set, ApplyResult};
+use super::profiles::{ApplyResult, commit_profile_set};
 
 #[derive(Deserialize)]
 pub struct ValidateRawInput {
@@ -28,7 +28,7 @@ pub fn validate_raw_profile(input: ValidateRawInput) -> ValidationResult {
     validate_kbd(&input.text)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn set_raw_profile_text(
     state: State<'_, AppState>,
     input: SaveRawInput,
@@ -72,7 +72,7 @@ pub fn set_raw_profile_text(
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn convert_profile_to_raw(
     state: State<'_, AppState>,
     id: String,
@@ -105,7 +105,10 @@ pub fn convert_profile_to_raw(
     let resolved = resolve_profile(
         &profiles,
         ResolutionContext {
-            executable: profile.app_matcher.as_ref().map(|matcher| matcher.executable.as_str()),
+            executable: profile
+                .app_matcher
+                .as_ref()
+                .map(|matcher| matcher.executable.as_str()),
             window_title: profile
                 .app_matcher
                 .as_ref()
@@ -143,10 +146,7 @@ pub struct PreviewResult {
 }
 
 #[tauri::command]
-pub fn preview_profile(
-    state: State<'_, AppState>,
-    id: String,
-) -> Result<PreviewResult, String> {
+pub fn preview_profile(state: State<'_, AppState>, id: String) -> Result<PreviewResult, String> {
     let profiles = state.profiles.read().clone();
     let profile = profiles
         .iter()
@@ -162,7 +162,10 @@ pub fn preview_profile(
             let resolved = resolve_profile(
                 &profiles,
                 ResolutionContext {
-                    executable: profile.app_matcher.as_ref().map(|matcher| matcher.executable.as_str()),
+                    executable: profile
+                        .app_matcher
+                        .as_ref()
+                        .map(|matcher| matcher.executable.as_str()),
                     window_title: profile
                         .app_matcher
                         .as_ref()

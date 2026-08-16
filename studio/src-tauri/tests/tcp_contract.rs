@@ -1,4 +1,10 @@
-use std::{io::{BufRead, BufReader, Write}, net::TcpListener, path::Path, thread, time::Duration};
+use std::{
+    io::{BufRead, BufReader, Write},
+    net::TcpListener,
+    path::Path,
+    thread,
+    time::Duration,
+};
 
 use kanata_studio::engine::tcp::KanataTcpClient;
 use kanata_tcp_protocol::ServerMessage;
@@ -19,11 +25,14 @@ fn tcp_client_performs_hello_and_blocking_reload_contract() {
         let mut hello = String::new();
         reader.read_line(&mut hello).unwrap();
         assert!(hello.contains("Hello"));
-        write_server_message(&mut stream, ServerMessage::HelloOk {
-            version: "test".into(),
-            protocol: 1,
-            capabilities: vec!["reload".into()],
-        });
+        write_server_message(
+            &mut stream,
+            ServerMessage::HelloOk {
+                version: "test".into(),
+                protocol: 1,
+                capabilities: vec!["reload".into()],
+            },
+        );
 
         let mut reload = String::new();
         reader.read_line(&mut reload).unwrap();
@@ -31,7 +40,13 @@ fn tcp_client_performs_hello_and_blocking_reload_contract() {
         assert!(reload.contains("\"wait\":true"));
         assert!(reload.contains("\"timeout_ms\":5000"));
         assert!(reload.contains("runtime.kbd"));
-        write_server_message(&mut stream, ServerMessage::ReloadResult { ok: true, timeout_ms: None });
+        write_server_message(
+            &mut stream,
+            ServerMessage::ReloadResult {
+                ok: true,
+                timeout_ms: None,
+            },
+        );
     });
 
     let mut client = KanataTcpClient::connect(port, Duration::from_secs(1)).unwrap();
@@ -49,7 +64,13 @@ fn tcp_client_surfaces_rejected_reload() {
         let mut reader = BufReader::new(stream.try_clone().unwrap());
         let mut request = String::new();
         reader.read_line(&mut request).unwrap();
-        write_server_message(&mut stream, ServerMessage::ReloadResult { ok: false, timeout_ms: None });
+        write_server_message(
+            &mut stream,
+            ServerMessage::ReloadResult {
+                ok: false,
+                timeout_ms: None,
+            },
+        );
     });
 
     let mut client = KanataTcpClient::connect(port, Duration::from_secs(1)).unwrap();

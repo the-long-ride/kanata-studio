@@ -18,6 +18,10 @@ impl StudioPaths {
         self.root.join("settings.json")
     }
 
+    pub fn keyboards(&self) -> PathBuf {
+        self.root.join("keyboards.json")
+    }
+
     pub fn runtime(&self, id: &str) -> PathBuf {
         self.root.join("runtime").join(format!("{id}.kbd"))
     }

@@ -7,7 +7,7 @@ use crate::{
     engine::switcher::ProfileSwitcher,
     platform::{
         active_app::system_provider,
-        devices::{apply_layouts, DeviceProvider, SystemDeviceProvider},
+        devices::{DeviceProvider, SystemDeviceProvider, apply_layouts},
     },
 };
 
@@ -43,24 +43,26 @@ fn start_active_app_watcher(app: AppHandle) {
 }
 
 fn start_device_watcher(app: AppHandle) {
-    thread::spawn(move || loop {
-        thread::sleep(Duration::from_secs(2));
-        let state = app.state::<AppState>();
-        let Ok(mut devices) = SystemDeviceProvider.list_keyboards() else {
-            continue;
-        };
-        let overrides = state.settings.read().device_layout_overrides.clone();
-        apply_layouts(&mut devices, &overrides);
-        let mut capabilities = crate::platform::capabilities::current_capabilities(
-            crate::platform::capabilities::windows_interception_available(),
-        );
-        capabilities.permissions = crate::platform::permissions::status();
-        if capabilities != *state.capabilities.read() {
-            *state.capabilities.write() = capabilities;
-        }
-        if devices != *state.devices.read() {
-            *state.devices.write() = devices;
-            apply_and_record(&state);
+    thread::spawn(move || {
+        loop {
+            thread::sleep(Duration::from_secs(2));
+            let state = app.state::<AppState>();
+            let Ok(mut devices) = SystemDeviceProvider.list_keyboards() else {
+                continue;
+            };
+            let overrides = state.settings.read().device_layout_overrides.clone();
+            apply_layouts(&mut devices, &overrides);
+            let mut capabilities = crate::platform::capabilities::current_capabilities(
+                crate::platform::capabilities::windows_interception_available(),
+            );
+            capabilities.permissions = crate::platform::permissions::status();
+            if capabilities != *state.capabilities.read() {
+                *state.capabilities.write() = capabilities;
+            }
+            if devices != *state.devices.read() {
+                *state.devices.write() = devices;
+                apply_and_record(&state);
+            }
         }
     });
 }
