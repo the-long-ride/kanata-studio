@@ -4,7 +4,7 @@
 
 This document is a record of designing/braindumping
 for the improvement to the sequences feature to add chord support.
-It is left in an informal and disorganized state 
+It is left in an informal and disorganized state
 — as opposed to a being presentable design doc — out of laziness.
 Apologies ahead of time if you read this and it's hard to follow,
 feel free to contribute a PR to create a new and more polished doc.

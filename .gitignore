@@ -8,3 +8,7 @@ PLAN.md
 test_*.kbd
 manual_test/
 *.test.kbd
+studio/node_modules/
+studio/dist/
+studio/src-tauri/target/
+studio/src-tauri/binaries/

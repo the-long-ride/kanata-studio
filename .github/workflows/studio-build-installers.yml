@@ -1,0 +1,60 @@
+name: studio-build-installers
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'studio/**'
+      - '.github/workflows/studio-build-installers.yml'
+      - 'Cargo.*'
+  push:
+    tags: ['studio-v*']
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.16.1
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - if: runner.os == 'Linux'
+        run: >-
+          sudo apt-get update &&
+          sudo apt-get install -y
+          libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - run: pnpm install --no-frozen-lockfile
+        working-directory: studio
+      - run: pnpm tauri icon src-tauri/icons/icon.svg
+        working-directory: studio
+      - run: TARGET=${{ matrix.target }} pnpm sidecars
+        working-directory: studio
+        shell: bash
+      - run: pnpm tauri build --target ${{ matrix.target }}
+        working-directory: studio
+      - name: Smoke check bundles
+        shell: bash
+        run: test -d studio/src-tauri/target/${{ matrix.target }}/release/bundle
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kanata-studio-${{ matrix.target }}
+          path: studio/src-tauri/target/${{ matrix.target }}/release/bundle/**

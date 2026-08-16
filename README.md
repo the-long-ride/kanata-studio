@@ -337,3 +337,7 @@ reads. They are **not** an endorsement.
 
 - https://www.effectivealtruism.org/
 - https://www.givewell.org/
+
+## Kanata Studio
+
+This fork adds an optional Tauri + React desktop UI under `studio/`. Kanata remains the remapping engine; Studio provides beginner visual profiles, advanced `.kbd` editing, tray/autostart, per-app switching, recovery, and native installers. See `studio/README.md`.

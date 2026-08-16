@@ -1,0 +1,35 @@
+{
+  "rules": [
+    {
+      "glob": "src/**/*.test.{ts,tsx}",
+      "max": 400
+    },
+    {
+      "glob": "src/**/*.{ts,tsx}",
+      "max": 250
+    },
+    {
+      "glob": "src/**/*.css",
+      "max": 300
+    },
+    {
+      "glob": "src-tauri/tests/**/*.rs",
+      "max": 400
+    },
+    {
+      "glob": "src-tauri/src/**/*_test.rs",
+      "max": 400
+    },
+    {
+      "glob": "src-tauri/src/**/*.rs",
+      "max": 300
+    }
+  ],
+  "exclude": [
+    "node_modules/**",
+    "dist/**",
+    "src/generated/**",
+    "src-tauri/target/**",
+    "src-tauri/binaries/**"
+  ]
+}

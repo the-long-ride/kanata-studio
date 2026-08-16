@@ -1,0 +1,8 @@
+import test from 'node:test'; import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'; import { tmpdir } from 'node:os'; import { join } from 'node:path';
+import { checkLineLimits } from './check-line-limits.mjs';
+const cfg={rules:[{glob:'src/**/*.test.{ts,tsx}',max:400},{glob:'src/**/*.{ts,tsx}',max:250},{glob:'src/**/*.css',max:300},{glob:'src-tauri/tests/**/*.rs',max:400},{glob:'src-tauri/src/**/*.rs',max:300}],exclude:['dist/**','target/**','src/generated/**','src-tauri/target/**','src-tauri/binaries/**']};
+const lines=n=>Array.from({length:n},(_,i)=>`line ${i}`).join('\n');
+async function fixture(files){const dir=await mkdtemp(join(tmpdir(),'kanata-lines-'));await writeFile(join(dir,'.line-limits.json'),JSON.stringify(cfg));for(const [p,c] of Object.entries(files)){await mkdir(join(dir,p,'..'),{recursive:true});await writeFile(join(dir,p),c);}return dir;}
+test('enforces production and test limits and exclusions',async()=>{const dir=await fixture({'src/a/ok.tsx':lines(250),'src/a/bad.tsx':lines(251),'src-tauri/src/ok.rs':lines(300),'src-tauri/src/bad.rs':lines(301),'src/a/ok.test.tsx':lines(400),'dist/huge.tsx':lines(999),'src-tauri/binaries/huge.rs':lines(999)});try{const v=await checkLineLimits(dir);assert.deepEqual(v.map(x=>x.path).sort(),['src-tauri/src/bad.rs','src/a/bad.tsx']);}finally{await rm(dir,{recursive:true,force:true});}});
+test('treats CRLF and trailing newline consistently',async()=>{const dir=await fixture({'src/a/crlf.tsx':Array.from({length:250},()=> 'x').join('\r\n')+'\r\n'});try{assert.deepEqual(await checkLineLimits(dir),[]);}finally{await rm(dir,{recursive:true,force:true});}});

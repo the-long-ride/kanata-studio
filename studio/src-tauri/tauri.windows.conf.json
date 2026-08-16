@@ -1,0 +1,12 @@
+{
+  "bundle": {
+    "targets": [
+      "nsis",
+      "msi"
+    ],
+    "externalBin": [
+      "binaries/kanata-engine",
+      "binaries/kanata-engine-interception"
+    ]
+  }
+}

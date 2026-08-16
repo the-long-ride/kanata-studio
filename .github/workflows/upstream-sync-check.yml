@@ -1,0 +1,19 @@
+name: upstream-sync-check
+on:
+  workflow_dispatch:
+  schedule: [{ cron: '17 7 * * 1' }]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v6
+        with: { fetch-depth: 0 }
+      - run: git remote add upstream https://github.com/jtroo/kanata.git || true
+      - run: git fetch upstream main
+      - name: Report
+        run: |
+          echo "### Kanata upstream sync" >> "$GITHUB_STEP_SUMMARY"
+          echo "Fork: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Upstream: $(git rev-parse upstream/main)" >> "$GITHUB_STEP_SUMMARY"
+          if git merge-base --is-ancestor HEAD upstream/main; then echo "Fork can fast-forward." >> "$GITHUB_STEP_SUMMARY"; else echo "Fork is diverged or ahead; use a sync branch." >> "$GITHUB_STEP_SUMMARY"; fi

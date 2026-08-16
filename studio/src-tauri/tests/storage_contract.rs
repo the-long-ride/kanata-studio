@@ -1,0 +1,64 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use kanata_studio::{
+    domain::{global_profile, UiMode},
+    storage::{JsonProfileStore, ProfileRepository, RecoveryStore, SettingsStore, StudioPaths, write_atomic},
+};
+
+fn temp_paths(label: &str) -> StudioPaths {
+    let nonce = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+    StudioPaths::new(std::env::temp_dir().join(format!(
+        "kanata-studio-test-{label}-{}-{nonce}",
+        std::process::id()
+    )))
+}
+
+#[test]
+fn profile_store_bootstraps_global_and_persists_changes() {
+    let paths = temp_paths("profiles");
+    let store = JsonProfileStore::new(paths.clone());
+    let initial = store.load_all().unwrap();
+    assert_eq!(initial, vec![global_profile()]);
+
+    let mut changed = initial;
+    changed[0].name = "My Global".into();
+    store.save_all(&changed).unwrap();
+    assert_eq!(store.load_all().unwrap()[0].name, "My Global");
+    std::fs::remove_dir_all(paths.root).unwrap();
+}
+
+#[test]
+fn settings_store_bootstraps_defaults_and_roundtrips() {
+    let paths = temp_paths("settings");
+    let store = SettingsStore::new(paths.clone());
+    let mut settings = store.load().unwrap();
+    assert!(settings.start_with_system);
+    settings.ui_mode = UiMode::Advanced;
+    settings.remapping_enabled = false;
+    store.save(&settings).unwrap();
+    let loaded = store.load().unwrap();
+    assert_eq!(loaded.ui_mode, UiMode::Advanced);
+    assert!(!loaded.remapping_enabled);
+    std::fs::remove_dir_all(paths.root).unwrap();
+}
+
+#[test]
+fn recovery_store_is_optional_then_roundtrips_last_known_good() {
+    let paths = temp_paths("recovery");
+    let store = RecoveryStore::new(paths.clone());
+    assert_eq!(store.read_last_known_good("all").unwrap(), None);
+    store.write_last_known_good("all", "valid config").unwrap();
+    assert_eq!(store.read_last_known_good("all").unwrap().as_deref(), Some("valid config"));
+    std::fs::remove_dir_all(paths.root).unwrap();
+}
+
+#[test]
+fn atomic_write_leaves_no_temp_file_after_replace() {
+    let paths = temp_paths("atomic");
+    let target = paths.root.join("runtime").join("all.kbd");
+    write_atomic(&target, "one").unwrap();
+    write_atomic(&target, "two").unwrap();
+    assert_eq!(std::fs::read_to_string(&target).unwrap(), "two");
+    assert!(!target.with_extension("tmp").exists());
+    std::fs::remove_dir_all(paths.root).unwrap();
+}

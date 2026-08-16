@@ -1,0 +1,53 @@
+[package]
+name = "kanata-studio"
+version = "0.1.0"
+description = "Beginner-friendly Kanata desktop UI"
+edition = "2024"
+license = "LGPL-3.0-only"
+
+[lib]
+name = "kanata_studio"
+crate-type = ["rlib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-autostart = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-updater = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+sha2 = "0.10"
+hex = "0.4"
+url = "2"
+parking_lot = "0.12"
+rustc-hash = "1.1"
+arboard = "3.4"
+kanata-parser = { path = "../../parser" }
+kanata-tcp-protocol = { path = "../../tcp_protocol" }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+winapi = { version = "0.3.9", features = ["winuser"] }
+windows-sys = { version = "0.52", features = [
+  "Win32_Foundation",
+  "Win32_System_Registry",
+  "Win32_System_Threading",
+  "Win32_System_LibraryLoader",
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_UI_WindowsAndMessaging",
+] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+evdev = "0.13"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+karabiner-driverkit = "0.4"
+objc = "0.2"
+
+[dev-dependencies]
+tauri = { version = "2", features = ["test", "tray-icon"] }
