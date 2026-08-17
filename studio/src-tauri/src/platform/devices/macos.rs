@@ -10,6 +10,7 @@ pub fn list() -> Result<Vec<KeyboardDevice>, PlatformError> {
             vendor_id: Some(device.vendor_id as u16),
             product_id: Some(device.product_id as u16),
             path: None,
+            interface_paths: Vec::new(),
             layout: KeyboardLayout::Unknown,
             manual_layout: None,
         })
