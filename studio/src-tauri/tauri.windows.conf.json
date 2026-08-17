@@ -7,6 +7,9 @@
     "externalBin": [
       "binaries/kanata-engine",
       "binaries/kanata-engine-interception"
-    ]
+    ],
+    "resources": {
+      "binaries/interception.dll": "interception.dll"
+    }
   }
 }
