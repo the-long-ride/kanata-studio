@@ -3,6 +3,7 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 
 use crate::{
+    commands::keyboard_identity::KeyboardIdentityMigration,
     domain::{CapabilitySet, ConfiguredKeyboard, KeyboardDevice, StudioProfile, StudioSettings},
     engine::{EngineStatus, LocalSupervisor, RuntimeHealth},
     platform::active_app::ActiveApp,
@@ -26,6 +27,7 @@ pub struct AppState {
     pub manual_profile_id: RwLock<Option<String>>,
     pub topology_signature: RwLock<Option<String>>,
     pub last_runtime_error: RwLock<Option<String>>,
+    pub identity_migrations: RwLock<Vec<KeyboardIdentityMigration>>,
 }
 
 impl AppState {
