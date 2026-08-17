@@ -4,6 +4,8 @@ pub mod linux;
 pub mod macos;
 #[cfg(target_os = "windows")]
 pub mod windows;
+#[cfg(target_os = "windows")]
+mod windows_identity;
 
 use std::collections::BTreeMap;
 
