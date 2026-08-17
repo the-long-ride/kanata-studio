@@ -96,10 +96,9 @@ impl LocalSupervisor {
     pub fn detach_all(&self) {
         let mut engines = self.engines.lock();
         for engine in engines.values_mut() {
-            if let Some(_child) = engine.child.take() {
-                // CommandChild does not kill on drop; leaving the handle here intentionally
-                // preserves the Kanata process while preventing Studio from managing it further.
-            }
+            // CommandChild has no kill-on-drop behavior; discarding Studio's handle leaves
+            // Kanata running while preventing Studio from managing that child after quit.
+            let _ = engine.child.take();
             engine.status.state = EngineState::Stopped;
             engine.status.message = Some("Kanata left running after Studio quit".into());
         }
