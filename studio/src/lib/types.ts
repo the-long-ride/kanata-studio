@@ -100,6 +100,7 @@ export type KeyboardDevice = {
     vendorId?: number | null;
     productId?: number | null;
     path?: string | null;
+    interfacePaths?: string[];
     layout: KeyboardLayout;
     manualLayout?: KeyboardLayout | null;
 };
