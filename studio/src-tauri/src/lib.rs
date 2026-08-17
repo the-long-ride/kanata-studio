@@ -61,6 +61,7 @@ pub fn run() {
                 &devices,
             )
             .map_err(|error| error.to_string())?;
+            let identity_migrations = reconciled.migrations.clone();
             if reconciled.changed {
                 profile_store
                     .save_all(&reconciled.profiles)
@@ -103,6 +104,7 @@ pub fn run() {
                 manual_profile_id: parking_lot::RwLock::new(None),
                 topology_signature: parking_lot::RwLock::new(None),
                 last_runtime_error: parking_lot::RwLock::new(None),
+                identity_migrations: parking_lot::RwLock::new(identity_migrations),
             });
 
             tray::build(app.handle())?;
