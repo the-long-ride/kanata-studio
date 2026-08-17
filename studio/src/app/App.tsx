@@ -49,9 +49,9 @@ export function App() {
   const [undoStack, setUndoStack] = useState<StudioProfile[]>([]);
   const { issue: runtimeIssue, report: queueRuntimeIssue, dismiss: dismissRuntimeIssue, retry: retryRuntimeIssue, retrying } = useRuntimeIssueQueue();
   const serverProfiles = useRef(new Map<string, StudioProfile>());
-  const pending = useRef<StudioProfile>();
+  const pending = useRef<StudioProfile | undefined>(undefined);
   const applying = useRef(false);
-  const timer = useRef<number>();
+  const timer = useRef<number | undefined>(undefined);
   const markRuntimeApplied = useCallback((engineStatuses: BootstrapState['engineStatuses']) => setState(old => ({ ...old, engineStatuses, health: 'Running' })), []);
   const retryRuntime = useCallback(async () => markRuntimeApplied(await applyRuntime()), [markRuntimeApplied]);
   const reportIssue = useCallback((issue: RuntimeIssue) => {

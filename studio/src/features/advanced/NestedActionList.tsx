@@ -72,8 +72,11 @@ function ActionFields({ action, onChange }: {
   if (action.type === 'delay') {
     return <label className="nested-number"><input className="ui-input" type="number" min={1} max={60000} value={action.ms} onChange={event => onChange({ type: 'delay', ms: Number(event.target.value) })} /><span>ms</span></label>;
   }
-  if (action.type === 'advanced' && (action.action.type === 'layerMomentary' || action.action.type === 'layerSwitch')) {
-    return <input className="ui-input" aria-label="Layer" value={action.action.layer} onChange={event => onChange({ type: 'advanced', action: { ...action.action, layer: event.target.value } })} />;
+  if (action.type === 'advanced' && action.action.type === 'layerMomentary') {
+    return <input className="ui-input" aria-label="Layer" value={action.action.layer} onChange={event => onChange({ type: 'advanced', action: { type: 'layerMomentary', layer: event.target.value } })} />;
+  }
+  if (action.type === 'advanced' && action.action.type === 'layerSwitch') {
+    return <input className="ui-input" aria-label="Layer" value={action.action.layer} onChange={event => onChange({ type: 'advanced', action: { type: 'layerSwitch', layer: event.target.value } })} />;
   }
   return <Button onClick={() => onChange(defaultFor('Key'))}>Convert to key</Button>;
 }

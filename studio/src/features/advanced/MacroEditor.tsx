@@ -11,7 +11,7 @@ export function MacroEditor({ actions, onChange }: {
 }) {
   const [recording, setRecording] = useState(false);
   const [exactTiming, setExactTiming] = useState(false);
-  const lastAt = useRef<number>();
+  const lastAt = useRef<number | undefined>(undefined);
   useEffect(() => {
     if (!recording) {
       lastAt.current = undefined;
