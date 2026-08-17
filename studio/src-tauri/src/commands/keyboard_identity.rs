@@ -60,31 +60,33 @@ pub fn reconcile_keyboard_identities(
             })
             .collect::<Vec<_>>();
 
-        let selected = if legacy_matches.len() == 1 {
-            Some((
+        let selected = match legacy_matches.len() {
+            1 => Some((
                 legacy_matches[0],
                 KeyboardIdentityMigrationReason::LegacyInterfacePath,
-            ))
-        } else {
-            let (Some(vendor_id), Some(product_id)) = (saved.vendor_id, saved.product_id) else {
-                continue;
-            };
-            let candidates = detected
-                .iter()
-                .filter(|device| {
-                    !claimed.contains(&device.id)
-                        && device.vendor_id == Some(vendor_id)
-                        && device.product_id == Some(product_id)
-                })
-                .collect::<Vec<_>>();
-            if candidates.len() == 1 {
-                Some((
-                    candidates[0],
-                    KeyboardIdentityMigrationReason::UniqueVidPid,
-                ))
-            } else {
-                None
+            )),
+            0 => {
+                let (Some(vendor_id), Some(product_id)) = (saved.vendor_id, saved.product_id) else {
+                    continue;
+                };
+                let candidates = detected
+                    .iter()
+                    .filter(|device| {
+                        !claimed.contains(&device.id)
+                            && device.vendor_id == Some(vendor_id)
+                            && device.product_id == Some(product_id)
+                    })
+                    .collect::<Vec<_>>();
+                if candidates.len() == 1 {
+                    Some((
+                        candidates[0],
+                        KeyboardIdentityMigrationReason::UniqueVidPid,
+                    ))
+                } else {
+                    None
+                }
             }
+            _ => None,
         };
 
         let Some((device, reason)) = selected else {
