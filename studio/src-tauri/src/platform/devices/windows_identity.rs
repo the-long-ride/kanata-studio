@@ -55,7 +55,8 @@ pub(crate) fn container_id_for_interface(path: &str) -> Result<Option<String>, P
             return Ok(None);
         }
 
-        let mut detail_buffer = vec![0u8; required as usize];
+        let words = (required as usize).div_ceil(mem::size_of::<usize>());
+        let mut detail_buffer = vec![0usize; words];
         let detail = detail_buffer
             .as_mut_ptr()
             .cast::<SP_DEVICE_INTERFACE_DETAIL_DATA_W>();
@@ -101,7 +102,7 @@ pub(crate) fn physical_id_from_container(container_id: &str) -> String {
         "windows-container-{}",
         container_id
             .trim()
-            .trim_matches(['{', '}'])
+            .trim_matches(|value| value == '{' || value == '}')
             .to_ascii_lowercase()
     )
 }
