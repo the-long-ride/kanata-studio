@@ -106,6 +106,7 @@ mod tests {
             vendor_id: Some(1),
             product_id: Some(2),
             path: None,
+            interface_paths: Vec::new(),
             layout: KeyboardLayout::Ansi,
             manual_layout: None,
         };
