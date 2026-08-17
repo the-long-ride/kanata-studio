@@ -3,6 +3,7 @@ pub mod model;
 pub mod ports;
 pub(crate) mod process;
 pub mod recovery;
+pub mod shutdown;
 pub mod supervisor;
 pub mod switcher;
 pub mod tcp;
