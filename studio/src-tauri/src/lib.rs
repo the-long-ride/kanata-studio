@@ -43,17 +43,36 @@ pub fn run() {
             let profile_store = JsonProfileStore::new(paths.clone());
             let settings_store = SettingsStore::new(paths.clone());
             let keyboard_store = JsonKeyboardStore::new(paths.clone());
-            let profiles = profile_store
+            let mut profiles = profile_store
                 .load_all()
                 .map_err(|error| error.to_string())?;
             let settings = settings_store.load().map_err(|error| error.to_string())?;
-            let configured_keyboards = keyboard_store
+            let mut configured_keyboards = keyboard_store
                 .load_all()
                 .map_err(|error| error.to_string())?;
             let mut devices = platform::devices::DeviceProvider::list_keyboards(
                 &platform::devices::SystemDeviceProvider,
             )
             .unwrap_or_default();
+
+            let reconciled = commands::keyboard_identity::reconcile_keyboard_identities(
+                &configured_keyboards,
+                &profiles,
+                &devices,
+            )
+            .map_err(|error| error.to_string())?;
+            if reconciled.changed {
+                profile_store
+                    .save_all(&reconciled.profiles)
+                    .map_err(|error| error.to_string())?;
+                if let Err(error) = keyboard_store.save_all(&reconciled.keyboards) {
+                    let _ = profile_store.save_all(&profiles);
+                    return Err(error.to_string().into());
+                }
+                profiles = reconciled.profiles;
+                configured_keyboards = reconciled.keyboards;
+            }
+
             platform::devices::apply_layouts(&mut devices, &settings.device_layout_overrides);
             platform::devices::apply_configured_layouts(&mut devices, &configured_keyboards);
             platform::devices::detect_layouts(&mut devices);

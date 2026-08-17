@@ -57,7 +57,10 @@ fn unique_vid_pid_match_migrates_keyboard_and_runtime_mapping() {
     assert!(result.changed);
     assert_eq!(result.keyboards[0].id, "new");
     assert_eq!(result.keyboards[0].name, "My keyboard");
-    assert_eq!(result.keyboards[0].layout_override, Some(KeyboardLayout::Iso));
+    assert_eq!(
+        result.keyboards[0].layout_override,
+        Some(KeyboardLayout::Iso)
+    );
 
     let migrated = result
         .profiles
@@ -100,9 +103,10 @@ fn ambiguous_identical_devices_are_not_migrated() {
 
     assert!(!result.changed);
     assert_eq!(result.keyboards[0].id, "old");
-    assert!(result.profiles.iter().any(|profile| {
-        profile.device_target == DeviceTarget::Device { id: "old".into() }
-    }));
+    assert!(result.profiles.iter().any(|profile| matches!(
+        &profile.device_target,
+        DeviceTarget::Device { id } if id == "old"
+    )));
 }
 
 #[test]
@@ -129,7 +133,8 @@ fn already_current_id_is_idempotent() {
 
     assert!(!result.changed);
     assert_eq!(result.keyboards[0].id, "same");
-    assert!(result.profiles.iter().any(|profile| {
-        profile.device_target == DeviceTarget::Device { id: "same".into() }
-    }));
+    assert!(result.profiles.iter().any(|profile| matches!(
+        &profile.device_target,
+        DeviceTarget::Device { id } if id == "same"
+    )));
 }

@@ -1,6 +1,7 @@
 pub mod bootstrap;
 pub mod devices;
 pub mod engine;
+pub mod keyboard_identity;
 pub mod keyboards;
 pub mod logs;
 pub mod profiles;

@@ -38,6 +38,19 @@ test('runtime topology ignores disconnected device targets', async () => {
   assert.match(topology, /filter\(\|id\| devices\.iter\(\)\.any/);
 });
 
+test('stale keyboard identity is reconciled at startup and device refresh', async () => {
+  const [identity, setup, devices] = await Promise.all([
+    read('src-tauri/src/commands/keyboard_identity.rs').catch(() => ''),
+    read('src-tauri/src/lib.rs'),
+    read('src-tauri/src/commands/devices.rs'),
+  ]);
+  assert.match(identity, /pub fn reconcile_keyboard_identities/);
+  assert.match(identity, /device\.vendor_id == Some\(vendor_id\)/);
+  assert.match(identity, /device\.product_id == Some\(product_id\)/);
+  assert.match(setup, /reconcile_keyboard_identities/);
+  assert.match(devices, /reconcile_keyboard_identities/);
+});
+
 test('keyboard catalog retains disconnected configured devices and marks new devices', async () => {
   const { buildKeyboardCatalog, profilesForKeyboard, initialKeyboardId } = await importRequired('src/features/keyboards/keyboardCatalog.ts');
   const configured = [{ id: 'a', name: 'Office', detectedName: 'A', vendorId: null, productId: null, layoutOverride: null }];
