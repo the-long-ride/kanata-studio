@@ -20,7 +20,7 @@ on:
       - 'Cargo.lock'
       - '.github/workflows/kanata-gui.yml'
   push:
-    branches: [main]
+    branches: [main, feat/add-GUI]
     tags: ['gui-v*']
     paths:
       - 'studio/**'
