@@ -93,6 +93,17 @@ impl LocalSupervisor {
         KanataTcpClient::connect(port, Duration::from_millis(500))?.tap_fake_key(name)
     }
 
+    pub fn detach_all(&self) {
+        let mut engines = self.engines.lock();
+        for engine in engines.values_mut() {
+            if let Some(child) = engine.child.take() {
+                std::mem::forget(child);
+            }
+            engine.status.state = EngineState::Stopped;
+            engine.status.message = Some("Kanata left running after Studio quit".into());
+        }
+    }
+
     pub(crate) fn dispatch_action(&self, id: &EngineId, message: &serde_json::Value) {
         let bindings = self
             .engines
