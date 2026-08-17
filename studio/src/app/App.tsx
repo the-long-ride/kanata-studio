@@ -24,7 +24,7 @@ import { addLayer, layerMappings, makeAppProfile, setLayerMapping } from './prof
 
 const fallback: BootstrapState = {
   profiles: [],
-  settings: { onboardingCompleted: false, startWithSystem: true, remappingEnabled: true, deviceLayoutOverrides: {}, uiMode: 'Beginner' },
+  settings: { onboardingCompleted: false, startWithSystem: true, remappingEnabled: true, stopKanataOnQuit: true, deviceLayoutOverrides: {}, uiMode: 'Beginner' },
   devices: [], configuredKeyboards: [],
   capabilities: { platform: 'Windows', perAppAutoSwitch: true, perDeviceMapping: 'RequiresWindowsInterception', windowTitleMatching: true, manualProfileSelection: true, permissions: {} },
   engineStatuses: [], activeProfileId: 'global', health: 'Running',
@@ -149,7 +149,7 @@ export function App() {
     if (!state.capabilities.perAppAutoSwitch) void setManualProfile(id).then(engineStatuses => setState(old => ({ ...old, activeProfileId: id, engineStatuses }))).catch(error => reportIssue(engineIssue(error, retryRuntime)));
   };
   const main = view === 'settings'
-    ? <SettingsView state={state} keyboards={keyboard.catalog} onStart={value => void saveSetting({ startWithSystem: value })} onManageKeyboard={id => void manageKeyboard(id)} onUpdate={checkUpdate} />
+    ? <SettingsView state={state} keyboards={keyboard.catalog} onStart={value => void saveSetting({ startWithSystem: value })} onStopKanataOnQuit={value => void saveSetting({ stopKanataOnQuit: value })} onManageKeyboard={id => void manageKeyboard(id)} onUpdate={checkUpdate} />
     : !keyboard.selected?.configured ? <KeyboardSetupPane keyboard={keyboard.selected} onSetup={() => void keyboard.setupSelected()} />
     : mode === 'Advanced' && profile ? <AdvancedWorkspace profile={profile} layout={layout} activeLayer={activeLayer} selectedKey={selectedKey} direct={direct} inherited={inherited} preview={preview} onSelectKey={setSelectedKey} onLayer={setActiveLayer} onAddLayer={onAddLayer} onConvertRaw={() => setConvertOpen(true)} onRawValidate={text => validateRawProfile({ text })} onRawApply={applyRaw} onPreview={() => void previewProfile(profile.id).then(result => setPreview(result.text))} />
     : <KeyboardCanvas layout={layout} selected={selectedKey} onSelect={setSelectedKey} direct={direct} inherited={inherited} />;
