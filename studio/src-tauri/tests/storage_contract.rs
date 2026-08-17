@@ -71,3 +71,19 @@ fn atomic_write_leaves_no_temp_file_after_replace() {
     assert!(!target.with_extension("tmp").exists());
     std::fs::remove_dir_all(paths.root).unwrap();
 }
+
+#[test]
+fn keyboard_device_without_interface_paths_deserializes_for_backcompat() {
+    let json = r#"{
+      "id":"legacy",
+      "name":"Keyboard",
+      "vendorId":1,
+      "productId":2,
+      "path":"legacy-path",
+      "layout":"Ansi",
+      "manualLayout":null
+    }"#;
+    let device: kanata_studio::domain::KeyboardDevice = serde_json::from_str(json).unwrap();
+    assert!(device.interface_paths.is_empty());
+    assert_eq!(device.path.as_deref(), Some("legacy-path"));
+}
