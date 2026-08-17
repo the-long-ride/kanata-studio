@@ -93,3 +93,15 @@ test('Windows Studio release executable does not allocate its own console', () =
   const main = read('../src-tauri/src/main.rs');
   assert.match(main, /#!\[cfg_attr\(not\(debug_assertions\), windows_subsystem = "windows"\)\]/);
 });
+
+test('engine event listener reuses the readiness TCP connection', () => {
+  const process = read('../src-tauri/src/engine/process.rs');
+  const supervisor = read('../src-tauri/src/engine/supervisor.rs');
+
+  assert.ok(
+    !process.includes('KanataTcpClient::connect_with_retry('),
+    'listener must not open a second TCP connection after the readiness hello',
+  );
+  const reused = supervisor.match(/start_listener\(self, id\.clone\(\), client\)/g) ?? [];
+  assert.equal(reused.length, 2, 'start and restart must hand the validated client to the listener');
+});
