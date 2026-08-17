@@ -17,6 +17,11 @@ use crate::{
     validation::validate_kbd,
 };
 
+use super::diagnostics::{
+    RuntimeResolutionDiagnostic, append_runtime_diagnostic, format_identity_migration,
+    format_resolution_diagnostic,
+};
+
 #[derive(Debug, Error)]
 pub enum RuntimeApplyError {
     #[error("profile resolution: {0}")]
@@ -33,11 +38,21 @@ pub enum RuntimeApplyError {
     Engine(String),
 }
 
+#[derive(Default)]
+struct PreparedDiagnostic {
+    contributing_profile_ids: Vec<String>,
+    base_mapping_count: usize,
+    advanced_layer_count: usize,
+    raw_profile: bool,
+    interface_count: usize,
+}
+
 struct PreparedEngine {
     spec: EngineSpec,
     compiled: CompiledConfig,
     profile_label: Option<String>,
     device_label: Option<String>,
+    diagnostic: PreparedDiagnostic,
 }
 
 pub fn apply_current_context(state: &AppState) -> Result<(), RuntimeApplyError> {
@@ -66,6 +81,17 @@ pub fn apply_current_context(state: &AppState) -> Result<(), RuntimeApplyError> 
     }
 
     for item in &prepared {
+        let diagnostic = format_resolution_diagnostic(&RuntimeResolutionDiagnostic {
+            engine_id: &item.spec.id.0,
+            device_id: item.device_label.as_deref(),
+            interface_count: item.diagnostic.interface_count,
+            contributing_profile_ids: &item.diagnostic.contributing_profile_ids,
+            base_mapping_count: item.diagnostic.base_mapping_count,
+            advanced_layer_count: item.diagnostic.advanced_layer_count,
+            raw_profile: item.diagnostic.raw_profile,
+        });
+        let _ = append_runtime_diagnostic(&state.paths.logs(), &diagnostic);
+
         write_atomic(&item.spec.config_path, &item.compiled.text)?;
         let running = !topology_changed
             && statuses
@@ -97,6 +123,7 @@ pub fn apply_current_context(state: &AppState) -> Result<(), RuntimeApplyError> 
             .write_last_known_good(&item.spec.id.0, &item.compiled.text)?;
     }
 
+    log_pending_identity_migrations(state);
     *state.topology_signature.write() = Some(signature);
     Ok(())
 }
@@ -129,6 +156,10 @@ fn prepare_engines(
 
     for mut spec in topology.engines {
         spec.config_path = state.paths.runtime(&spec.id.0);
+        let mut diagnostic = PreparedDiagnostic {
+            interface_count: interface_count(&spec.device_scope),
+            ..Default::default()
+        };
         let compiled = if matches!(spec.device_scope, EngineDeviceScope::MacDeviceAware(_)) {
             compile_mac(
                 state,
@@ -149,6 +180,10 @@ fn prepare_engines(
                 },
             )
             .map_err(|error| RuntimeApplyError::Profile(error.to_string()))?;
+            diagnostic.contributing_profile_ids = resolved.contributing_profile_ids.clone();
+            diagnostic.base_mapping_count = resolved.mappings.len();
+            diagnostic.advanced_layer_count = resolved.layers.len();
+            diagnostic.raw_profile = resolved.raw_kbd.is_some();
             compile_resolved(
                 &resolved,
                 CompileContext {
@@ -175,6 +210,7 @@ fn prepare_engines(
             compiled,
             profile_label,
             device_label,
+            diagnostic,
         });
     }
     Ok(prepared)
@@ -253,6 +289,37 @@ fn included_device_id(scope: &EngineDeviceScope) -> Option<&str> {
     match scope {
         EngineDeviceScope::IncludeDevice(device) => Some(device.id.as_str()),
         _ => None,
+    }
+}
+
+fn interface_count(scope: &EngineDeviceScope) -> usize {
+    match scope {
+        EngineDeviceScope::IncludeDevice(device) => {
+            if device.interface_paths.is_empty() {
+                usize::from(device.path.is_some())
+            } else {
+                device.interface_paths.len()
+            }
+        }
+        _ => 0,
+    }
+}
+
+fn log_pending_identity_migrations(state: &AppState) {
+    let migrations = state.identity_migrations.read().clone();
+    if migrations.is_empty() {
+        return;
+    }
+    let mut all_logged = true;
+    for migration in &migrations {
+        if append_runtime_diagnostic(&state.paths.logs(), &format_identity_migration(migration))
+            .is_err()
+        {
+            all_logged = false;
+        }
+    }
+    if all_logged {
+        state.identity_migrations.write().clear();
     }
 }
 
