@@ -26,6 +26,12 @@ pub fn update_settings(
         settings.remapping_enabled = value;
     }
     if let Some(value) = input
+        .get("stopKanataOnQuit")
+        .and_then(|value| value.as_bool())
+    {
+        settings.stop_kanata_on_quit = value;
+    }
+    if let Some(value) = input
         .get("onboardingCompleted")
         .and_then(|value| value.as_bool())
     {
