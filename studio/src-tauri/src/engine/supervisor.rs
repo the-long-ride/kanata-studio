@@ -159,7 +159,8 @@ impl LocalSupervisor {
 
         let port = super::ports::allocate_loopback_port()?;
         let child = spawn_sidecar(self, &spec, port)?;
-        KanataTcpClient::connect_with_retry(port, Duration::from_secs(5))?.hello()?;
+        let mut client = KanataTcpClient::connect_with_retry(port, Duration::from_secs(5))?;
+        client.hello()?;
         {
             let mut engines = self.engines.lock();
             let engine = engines
@@ -170,7 +171,7 @@ impl LocalSupervisor {
             engine.status.state = EngineState::Running;
             engine.status.message = None;
         }
-        start_listener(self, id.clone(), port);
+        start_listener(self, id.clone(), client);
         Ok(())
     }
 }
@@ -179,9 +180,8 @@ impl EngineSupervisor for LocalSupervisor {
     fn start(self: &Arc<Self>, spec: EngineSpec) -> Result<EngineHandle, EngineError> {
         let port = super::ports::allocate_loopback_port()?;
         let child = spawn_sidecar(self, &spec, port)?;
-        if let Err(error) =
-            KanataTcpClient::connect_with_retry(port, Duration::from_secs(5))?.hello()
-        {
+        let mut client = KanataTcpClient::connect_with_retry(port, Duration::from_secs(5))?;
+        if let Err(error) = client.hello() {
             let _ = child.kill();
             return Err(error);
         }
@@ -204,7 +204,7 @@ impl EngineSupervisor for LocalSupervisor {
                 action_bindings: BTreeMap::new(),
             },
         );
-        start_listener(self, id.clone(), port);
+        start_listener(self, id.clone(), client);
         Ok(EngineHandle { id, port })
     }
 
