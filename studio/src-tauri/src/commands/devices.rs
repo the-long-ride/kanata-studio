@@ -23,6 +23,7 @@ pub fn list_keyboards(state: State<'_, AppState>) -> Result<Vec<KeyboardDevice>,
     let current_profiles = state.profiles.read().clone();
     let reconciled =
         reconcile_keyboard_identities(&current_keyboards, &current_profiles, &devices)?;
+    let migrations = reconciled.migrations.clone();
 
     if reconciled.changed {
         state
@@ -43,6 +44,7 @@ pub fn list_keyboards(state: State<'_, AppState>) -> Result<Vec<KeyboardDevice>,
     if reconciled.changed {
         *state.profiles.write() = reconciled.profiles;
         *state.configured_keyboards.write() = reconciled.keyboards;
+        state.identity_migrations.write().extend(migrations);
     }
     *state.devices.write() = devices.clone();
 
