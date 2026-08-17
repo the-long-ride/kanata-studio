@@ -35,6 +35,7 @@ pub fn list() -> Result<Vec<KeyboardDevice>, PlatformError> {
                 vendor_id: Some(input_id.vendor()),
                 product_id: Some(input_id.product()),
                 path: Some(path.display().to_string()),
+                interface_paths: Vec::new(),
                 layout,
                 manual_layout: None,
             });
