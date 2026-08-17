@@ -54,7 +54,8 @@ pub fn list() -> Result<Vec<KeyboardDevice>, PlatformError> {
                     name: friendly_name(&path),
                     vendor_id,
                     product_id,
-                    path: Some(path),
+                    path: Some(path.clone()),
+                    interface_paths: vec![path],
                     layout: detected_layout(raw),
                     manual_layout: None,
                 });
