@@ -130,6 +130,7 @@ export type StudioSettings = {
     onboardingCompleted: boolean;
     startWithSystem: boolean;
     remappingEnabled: boolean;
+    stopKanataOnQuit: boolean;
     deviceLayoutOverrides: Record<string, KeyboardLayout>;
     uiMode: UiMode;
 };
