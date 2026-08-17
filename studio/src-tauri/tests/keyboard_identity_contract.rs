@@ -36,10 +36,7 @@ fn mapped_profile(id: &str) -> kanata_studio::domain::StudioProfile {
     device_global_profile(
         id,
         ProfileSource::Visual {
-            mappings: BTreeMap::from([(
-                "caps".into(),
-                ActionSpec::Key { key: "esc".into() },
-            )]),
+            mappings: BTreeMap::from([("caps".into(), ActionSpec::Key { key: "esc".into() })]),
             advanced: Default::default(),
         },
     )
