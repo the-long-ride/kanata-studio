@@ -1,4 +1,5 @@
 pub mod apply;
+pub mod diagnostics;
 pub mod watcher;
 
 pub use apply::{RuntimeApplyError, apply_current_context, pause_all, resume_all};
