@@ -14,15 +14,20 @@ fn linux_path(device: &KeyboardDevice) -> Option<&str> {
     device.path.as_deref()
 }
 
-fn windows_hwid_bytes(device: &KeyboardDevice) -> Option<String> {
-    let raw = device.path.as_ref()?;
-    let bytes = raw
-        .encode_utf16()
+fn windows_interface_paths(device: &KeyboardDevice) -> Vec<&str> {
+    if device.interface_paths.is_empty() {
+        device.path.as_deref().into_iter().collect()
+    } else {
+        device.interface_paths.iter().map(String::as_str).collect()
+    }
+}
+
+fn windows_hwid_bytes(raw: &str) -> String {
+    raw.encode_utf16()
         .flat_map(u16::to_le_bytes)
         .map(|byte| byte.to_string())
         .collect::<Vec<_>>()
-        .join(", ");
-    Some(bytes)
+        .join(", ")
 }
 
 pub fn defcfg_for_scope(platform: Platform, scope: &EngineDeviceScope) -> String {
@@ -44,16 +49,23 @@ pub fn defcfg_for_scope(platform: Platform, scope: &EngineDeviceScope) -> String
             }
         }
         (Platform::Windows, EngineDeviceScope::IncludeDevice(device)) => {
-            if let Some(bytes) = windows_hwid_bytes(device) {
+            let values = windows_interface_paths(device)
+                .into_iter()
+                .map(windows_hwid_bytes)
+                .map(|value| format!("\"{value}\""))
+                .collect::<Vec<_>>()
+                .join(" ");
+            if !values.is_empty() {
                 lines.push(format!(
-                    "  windows-interception-keyboard-hwids (\"{bytes}\")"
+                    "  windows-interception-keyboard-hwids ({values})"
                 ));
             }
         }
         (Platform::Windows, EngineDeviceScope::ExcludeDevices(devices)) => {
             let values = devices
                 .iter()
-                .filter_map(windows_hwid_bytes)
+                .flat_map(windows_interface_paths)
+                .map(windows_hwid_bytes)
                 .map(|value| format!("\"{value}\""))
                 .collect::<Vec<_>>()
                 .join(" ");
