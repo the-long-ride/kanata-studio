@@ -1,4 +1,4 @@
-use std::{mem, ptr};
+use std::{collections::BTreeMap, mem, ptr};
 
 use sha2::{Digest, Sha256};
 use winapi::{
@@ -11,7 +11,19 @@ use winapi::{
 
 use crate::domain::{KeyboardDevice, KeyboardLayout};
 
-use super::super::PlatformError;
+use super::{
+    super::PlatformError,
+    windows_identity::{container_id_for_interface, physical_id_from_container},
+};
+
+#[derive(Debug, Clone)]
+struct RawKeyboardInterface {
+    path: String,
+    container_id: Option<String>,
+    vendor_id: Option<u16>,
+    product_id: Option<u16>,
+    layout: KeyboardLayout,
+}
 
 pub fn list() -> Result<Vec<KeyboardDevice>, PlatformError> {
     unsafe {
@@ -42,27 +54,68 @@ pub fn list() -> Result<Vec<KeyboardDevice>, PlatformError> {
             ));
         }
 
-        let mut keyboards = Vec::new();
+        let mut interfaces = Vec::new();
         for raw in raw_devices
             .iter()
             .filter(|device| device.dwType == RIM_TYPEKEYBOARD)
         {
             if let Some(path) = device_path(raw) {
                 let (vendor_id, product_id) = parse_vid_pid(&path);
-                keyboards.push(KeyboardDevice {
-                    id: stable_id(&path),
-                    name: friendly_name(&path),
+                let container_id = container_id_for_interface(&path).ok().flatten();
+                interfaces.push(RawKeyboardInterface {
+                    path,
+                    container_id,
                     vendor_id,
                     product_id,
-                    path: Some(path.clone()),
-                    interface_paths: vec![path],
                     layout: detected_layout(raw),
-                    manual_layout: None,
                 });
             }
         }
-        Ok(keyboards)
+        Ok(group_interfaces(interfaces))
     }
+}
+
+fn group_interfaces(rows: Vec<RawKeyboardInterface>) -> Vec<KeyboardDevice> {
+    let mut groups = BTreeMap::<String, Vec<RawKeyboardInterface>>::new();
+    for row in rows {
+        let id = row
+            .container_id
+            .as_deref()
+            .map(physical_id_from_container)
+            .unwrap_or_else(|| stable_id(&row.path));
+        groups.entry(id).or_default().push(row);
+    }
+
+    groups
+        .into_iter()
+        .map(|(id, rows)| {
+            let mut interface_paths = rows.iter().map(|row| row.path.clone()).collect::<Vec<_>>();
+            interface_paths.sort();
+            interface_paths.dedup();
+            let first = &rows[0];
+            let vendor_id = rows.iter().find_map(|row| row.vendor_id);
+            let product_id = rows.iter().find_map(|row| row.product_id);
+            let layout = rows
+                .iter()
+                .map(|row| row.layout.clone())
+                .find(|layout| *layout != KeyboardLayout::Unknown)
+                .unwrap_or_else(|| first.layout.clone());
+            let name = match (vendor_id, product_id) {
+                (Some(vid), Some(pid)) => format!("Keyboard {vid:04X}:{pid:04X}"),
+                _ => friendly_name(&first.path),
+            };
+            KeyboardDevice {
+                id,
+                name,
+                vendor_id,
+                product_id,
+                path: interface_paths.first().cloned(),
+                interface_paths,
+                layout,
+                manual_layout: None,
+            }
+        })
+        .collect()
 }
 
 fn detected_layout(device: &RAWINPUTDEVICELIST) -> KeyboardLayout {
@@ -121,7 +174,7 @@ fn device_path(device: &RAWINPUTDEVICELIST) -> Option<String> {
     }
 }
 
-fn stable_id(path: &str) -> String {
+pub(crate) fn stable_id(path: &str) -> String {
     let digest = Sha256::digest(path.as_bytes());
     format!("windows-{}", &hex::encode(digest)[..16])
 }
