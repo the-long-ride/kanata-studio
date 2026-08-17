@@ -19,6 +19,8 @@ pub struct KeyboardDevice {
     pub vendor_id: Option<u16>,
     pub product_id: Option<u16>,
     pub path: Option<String>,
+    #[serde(default)]
+    pub interface_paths: Vec<String>,
     pub layout: KeyboardLayout,
     pub manual_layout: Option<KeyboardLayout>,
 }
