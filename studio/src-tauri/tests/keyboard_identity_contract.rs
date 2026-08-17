@@ -10,12 +10,14 @@ use kanata_studio::{
 };
 
 fn device(id: &str, vendor_id: Option<u16>, product_id: Option<u16>) -> KeyboardDevice {
+    let path = format!(r"\\?\HID#{id}");
     KeyboardDevice {
         id: id.into(),
         name: format!("Detected {id}"),
         vendor_id,
         product_id,
-        path: Some(format!(r"\\?\HID#{id}")),
+        path: Some(path.clone()),
+        interface_paths: vec![path],
         layout: KeyboardLayout::Ansi,
         manual_layout: None,
     }
