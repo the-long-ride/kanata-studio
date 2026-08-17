@@ -1,0 +1,91 @@
+name: GUI Windows Test Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/add-GUI]
+    paths:
+      - 'studio/**'
+      - 'src/**'
+      - 'parser/**'
+      - 'tcp_protocol/**'
+      - 'keyberon/**'
+      - 'interception/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/kanata-gui-windows-test.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gui-windows-test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -Dwarnings
+
+jobs:
+  windows-installer:
+    name: Windows x64 installer
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+            studio/src-tauri -> studio/src-tauri/target
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Install frontend dependencies
+        run: pnpm install --no-frozen-lockfile
+        working-directory: studio
+
+      - name: Build bundled Kanata sidecars
+        run: pnpm sidecars
+        working-directory: studio
+        env:
+          TARGET: x86_64-pc-windows-msvc
+
+      - name: Build Tauri Windows bundles
+        run: pnpm tauri build --target x86_64-pc-windows-msvc
+        working-directory: studio
+
+      - name: Verify bundle directory
+        shell: bash
+        run: |
+          test -d target/x86_64-pc-windows-msvc/release/bundle || \
+            test -d studio/src-tauri/target/x86_64-pc-windows-msvc/release/bundle
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: kanata-gui-windows-x64-${{ github.sha }}
+          path: |
+            target/x86_64-pc-windows-msvc/release/bundle/**
+            studio/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/**
+          if-no-files-found: error
+          retention-days: 14
