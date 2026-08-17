@@ -1,7 +1,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use kanata_studio::{
-    domain::{UiMode, global_profile},
+    domain::{StudioSettings, UiMode, global_profile},
     storage::{
         JsonProfileStore, ProfileRepository, RecoveryStore, SettingsStore, StudioPaths,
         write_atomic,
@@ -39,13 +39,29 @@ fn settings_store_bootstraps_defaults_and_roundtrips() {
     let store = SettingsStore::new(paths.clone());
     let mut settings = store.load().unwrap();
     assert!(settings.start_with_system);
+    assert!(settings.stop_kanata_on_quit);
     settings.ui_mode = UiMode::Advanced;
     settings.remapping_enabled = false;
     store.save(&settings).unwrap();
     let loaded = store.load().unwrap();
     assert_eq!(loaded.ui_mode, UiMode::Advanced);
     assert!(!loaded.remapping_enabled);
+    assert!(loaded.stop_kanata_on_quit);
     std::fs::remove_dir_all(paths.root).unwrap();
+}
+
+#[test]
+fn legacy_settings_missing_quit_policy_defaults_to_true() {
+    let json = r#"{
+      "onboardingCompleted":true,
+      "startWithSystem":false,
+      "remappingEnabled":true,
+      "deviceLayoutOverrides":{},
+      "uiMode":"Beginner"
+    }"#;
+    let settings: StudioSettings = serde_json::from_str(json).unwrap();
+    assert!(settings.stop_kanata_on_quit);
+    assert!(StudioSettings::default().stop_kanata_on_quit);
 }
 
 #[test]
