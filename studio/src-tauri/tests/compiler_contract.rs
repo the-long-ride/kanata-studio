@@ -1,10 +1,13 @@
 use std::collections::BTreeMap;
 
 use kanata_studio::{
-    compiler::{CompileContext, compile_resolved, device_scope::EngineDeviceScope},
+    compiler::{
+        CompileContext, compile_resolved,
+        device_scope::{EngineDeviceScope, defcfg_for_scope},
+    },
     domain::{
-        ActionSpec, AdvancedActionSpec, MediaAction, Modifier, Platform, ResolvedProfile,
-        VisualLayer,
+        ActionSpec, AdvancedActionSpec, KeyboardDevice, KeyboardLayout, MediaAction, Modifier,
+        Platform, ResolvedProfile, VisualLayer,
     },
 };
 
@@ -29,6 +32,56 @@ fn compile(
         },
     )
     .unwrap()
+}
+
+fn windows_device(id: &str, paths: &[&str]) -> KeyboardDevice {
+    KeyboardDevice {
+        id: id.into(),
+        name: format!("Keyboard {id}"),
+        vendor_id: Some(0x1234),
+        product_id: Some(0x5678),
+        path: paths.first().map(|path| (*path).to_string()),
+        interface_paths: paths.iter().map(|path| (*path).to_string()).collect(),
+        layout: KeyboardLayout::Ansi,
+        manual_layout: None,
+    }
+}
+
+fn windows_hwid_bytes(path: &str) -> String {
+    path.encode_utf16()
+        .flat_map(u16::to_le_bytes)
+        .map(|byte| byte.to_string())
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+#[test]
+fn windows_include_filter_emits_every_physical_interface() {
+    let a = r"\\?\HID#VID_1234&PID_5678&A";
+    let b = r"\\?\HID#VID_1234&PID_5678&B";
+    let text = defcfg_for_scope(
+        Platform::Windows,
+        &EngineDeviceScope::IncludeDevice(windows_device("physical", &[a, b])),
+    );
+    assert!(text.contains(&windows_hwid_bytes(a)));
+    assert!(text.contains(&windows_hwid_bytes(b)));
+}
+
+#[test]
+fn windows_exclude_filter_emits_every_interface_from_every_device() {
+    let a = r"\\?\HID#VID_1111&PID_0001&A";
+    let b = r"\\?\HID#VID_1111&PID_0001&B";
+    let c = r"\\?\HID#VID_2222&PID_0002&C";
+    let text = defcfg_for_scope(
+        Platform::Windows,
+        &EngineDeviceScope::ExcludeDevices(vec![
+            windows_device("one", &[a, b]),
+            windows_device("two", &[c]),
+        ]),
+    );
+    for path in [a, b, c] {
+        assert!(text.contains(&windows_hwid_bytes(path)));
+    }
 }
 
 #[test]
