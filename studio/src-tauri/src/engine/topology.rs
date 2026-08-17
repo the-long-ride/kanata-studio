@@ -131,6 +131,7 @@ mod tests {
             vendor_id: Some(1),
             product_id: Some(2),
             path: Some("/dev/input/event0".into()),
+            interface_paths: Vec::new(),
             layout: KeyboardLayout::Unknown,
             manual_layout: None,
         }
