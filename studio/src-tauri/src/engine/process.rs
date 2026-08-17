@@ -1,7 +1,4 @@
-use std::{
-    sync::{Arc, Weak},
-    time::Duration,
-};
+use std::sync::{Arc, Weak};
 
 use tauri_plugin_shell::{
     ShellExt,
@@ -64,16 +61,13 @@ pub(crate) fn spawn_sidecar(
     Ok(child)
 }
 
-pub(crate) fn start_listener(supervisor: &Arc<LocalSupervisor>, id: EngineId, port: u16) {
+pub(crate) fn start_listener(
+    supervisor: &Arc<LocalSupervisor>,
+    id: EngineId,
+    mut client: KanataTcpClient,
+) {
     let weak: Weak<LocalSupervisor> = Arc::downgrade(supervisor);
     std::thread::spawn(move || {
-        let Ok(mut client) = KanataTcpClient::connect_with_retry(port, Duration::from_secs(5))
-        else {
-            return;
-        };
-        if client.hello().is_err() {
-            return;
-        }
         loop {
             let Ok(message) = client.read_message() else {
                 return;
