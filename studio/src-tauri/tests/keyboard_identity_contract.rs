@@ -1,13 +1,16 @@
 use std::collections::BTreeMap;
 
 use kanata_studio::{
-    commands::keyboard_identity::reconcile_keyboard_identities,
+    commands::keyboard_identity::{
+        KeyboardIdentityMigrationReason, reconcile_keyboard_identities,
+    },
     domain::{
         ActionSpec, ConfiguredKeyboard, DeviceTarget, KeyboardDevice, KeyboardLayout,
         ProfileSource, ResolutionContext, UiMode, device_global_profile, global_profile,
         resolve_profile,
     },
 };
+use sha2::{Digest, Sha256};
 
 fn device(id: &str, vendor_id: Option<u16>, product_id: Option<u16>) -> KeyboardDevice {
     let path = format!(r"\\?\HID#{id}");
@@ -44,6 +47,74 @@ fn mapped_profile(id: &str) -> kanata_studio::domain::StudioProfile {
     )
 }
 
+fn legacy_windows_id_for_test(path: &str) -> String {
+    let digest = Sha256::digest(path.as_bytes());
+    format!("windows-{}", &hex::encode(digest)[..16])
+}
+
+#[test]
+fn legacy_path_hash_matching_member_interface_migrates_to_container_id() {
+    let path = r"\\?\HID#VID_1234&PID_5678&MI_01#OLD";
+    let old = legacy_windows_id_for_test(path);
+    let mut current = device(
+        "windows-container-abcdef01-2345-6789-abcd-ef0123456789",
+        Some(0x1234),
+        Some(0x5678),
+    );
+    current.path = Some(path.into());
+    current.interface_paths = vec![
+        path.into(),
+        r"\\?\HID#VID_1234&PID_5678&MI_00#OTHER".into(),
+    ];
+
+    let result = reconcile_keyboard_identities(
+        &[configured(&old, Some(0x1234), Some(0x5678))],
+        &[global_profile(), mapped_profile(&old)],
+        &[current],
+    )
+    .unwrap();
+
+    assert_eq!(
+        result.keyboards[0].id,
+        "windows-container-abcdef01-2345-6789-abcd-ef0123456789"
+    );
+    assert_eq!(
+        result.migrations[0].reason,
+        KeyboardIdentityMigrationReason::LegacyInterfacePath
+    );
+}
+
+#[test]
+fn physical_id_survives_interface_path_churn_and_resolves_mapping() {
+    let id = "windows-container-abcdef01-2345-6789-abcd-ef0123456789";
+    let mut current = device(id, Some(0x1234), Some(0x5678));
+    current.path = Some(r"\\?\HID#NEW-PATH".into());
+    current.interface_paths = vec![r"\\?\HID#NEW-PATH".into()];
+
+    let result = reconcile_keyboard_identities(
+        &[configured(id, Some(0x1234), Some(0x5678))],
+        &[global_profile(), mapped_profile(id)],
+        &[current],
+    )
+    .unwrap();
+    assert!(!result.changed);
+
+    let resolved = resolve_profile(
+        &result.profiles,
+        ResolutionContext {
+            executable: None,
+            window_title: None,
+            device_id: Some(id),
+            ui_mode: UiMode::Beginner,
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        resolved.mappings.get("caps"),
+        Some(&ActionSpec::Key { key: "esc".into() })
+    );
+}
+
 #[test]
 fn unique_vid_pid_match_migrates_keyboard_and_runtime_mapping() {
     let result = reconcile_keyboard_identities(
@@ -59,6 +130,10 @@ fn unique_vid_pid_match_migrates_keyboard_and_runtime_mapping() {
     assert_eq!(
         result.keyboards[0].layout_override,
         Some(KeyboardLayout::Iso)
+    );
+    assert_eq!(
+        result.migrations[0].reason,
+        KeyboardIdentityMigrationReason::UniqueVidPid
     );
 
     let migrated = result
@@ -101,6 +176,7 @@ fn ambiguous_identical_devices_are_not_migrated() {
     .unwrap();
 
     assert!(!result.changed);
+    assert!(result.migrations.is_empty());
     assert_eq!(result.keyboards[0].id, "old");
     assert!(result.profiles.iter().any(|profile| matches!(
         &profile.device_target,
@@ -118,6 +194,7 @@ fn missing_vid_pid_is_not_migrated() {
     .unwrap();
 
     assert!(!result.changed);
+    assert!(result.migrations.is_empty());
     assert_eq!(result.keyboards[0].id, "old");
 }
 
@@ -131,6 +208,7 @@ fn already_current_id_is_idempotent() {
     .unwrap();
 
     assert!(!result.changed);
+    assert!(result.migrations.is_empty());
     assert_eq!(result.keyboards[0].id, "same");
     assert!(result.profiles.iter().any(|profile| matches!(
         &profile.device_target,
