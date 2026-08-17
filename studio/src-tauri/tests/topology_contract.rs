@@ -30,6 +30,7 @@ fn keyboard(id: &str) -> KeyboardDevice {
         vendor_id: Some(0x1234),
         product_id: Some(0x5678),
         path: Some(format!("/dev/input/{id}")),
+        interface_paths: Vec::new(),
         layout: KeyboardLayout::Ansi,
         manual_layout: None,
     }
