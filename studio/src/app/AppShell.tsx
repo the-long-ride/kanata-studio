@@ -60,7 +60,7 @@ export function AppShell({
   return <div className="app-shell">
     <header className="topbar">
       <button className="brand-drag" type="button" aria-label="Drag window" onMouseDown={() => void startWindowDrag()}>
-        <span className="brand-logo" aria-hidden="true">K</span><span className="brand">Kanata Studio</span>
+        <span className="brand-logo" aria-hidden="true" /><span className="brand">Kanata Studio</span>
       </button>
       {keyboardControl}
       <ModeSwitch value={mode} onChange={onMode} />
