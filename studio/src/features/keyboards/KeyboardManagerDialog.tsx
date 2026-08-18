@@ -80,7 +80,7 @@ function KeyboardManagerForm({
       </label>
       <label className="field">Visual keyboard
         <Select value={visualPreset} onChange={event => setVisualPreset(event.target.value as KeyboardVisualPreset | 'Auto')}>
-          <option value="Auto">Auto ({keyboard.visualPreset})</option>
+          <option value="Auto">Auto ({keyboard.visualPreset ?? keyboard.layout})</option>
           <option value="fullsize">Full size</option>
           <option value="tkl">TKL</option>
           <option value="75">75%</option>
