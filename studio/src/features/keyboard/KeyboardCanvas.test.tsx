@@ -85,7 +85,7 @@ describe('KeyboardCanvas', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Fn layer' }));
     expect(screen.getByText('Mute')).toBeTruthy();
-    const fn = screen.getByRole('button', { name: /Fn/ });
+    const fn = screen.getByRole('button', { name: /^Fn$/ });
     expect(fn.getAttribute('aria-disabled')).toBe('true');
     fireEvent.click(fn);
     expect(onSelect).not.toHaveBeenCalledWith('fn');
