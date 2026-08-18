@@ -14,6 +14,14 @@ fn default_true() -> bool {
     true
 }
 
+fn default_left_rail_width() -> u16 {
+    260
+}
+
+fn default_right_pane_width() -> u16 {
+    340
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StudioSettings {
@@ -24,6 +32,10 @@ pub struct StudioSettings {
     pub stop_kanata_on_quit: bool,
     pub device_layout_overrides: BTreeMap<String, KeyboardLayout>,
     pub ui_mode: UiMode,
+    #[serde(default = "default_left_rail_width")]
+    pub left_rail_width: u16,
+    #[serde(default = "default_right_pane_width")]
+    pub right_pane_width: u16,
 }
 
 impl Default for StudioSettings {
@@ -35,6 +47,8 @@ impl Default for StudioSettings {
             stop_kanata_on_quit: true,
             device_layout_overrides: BTreeMap::new(),
             ui_mode: UiMode::Beginner,
+            left_rail_width: default_left_rail_width(),
+            right_pane_width: default_right_pane_width(),
         }
     }
 }
