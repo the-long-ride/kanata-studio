@@ -94,6 +94,7 @@ mod tests {
                 },
             )]),
             layers: vec![],
+            chord_sets: vec![],
             raw_kbd: None,
         }
     }
