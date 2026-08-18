@@ -5,7 +5,7 @@ import { AdvancedInspector } from '../features/advanced/AdvancedInspector';
 import { AdvancedWorkspace } from '../features/advanced/AdvancedWorkspace';
 import { chordSetsValid } from '../features/advanced/chordValidation';
 import { ConvertToRawDialog } from '../features/advanced/ConvertToRawDialog';
-import { KeyInspector } from '../features/inspector/KeyInspector';
+import { KeySettingsModal } from '../features/inspector/KeySettingsModal';
 import { KeyboardCanvas } from '../features/keyboard/KeyboardCanvas';
 import { KeyboardManagerDialog } from '../features/keyboards/KeyboardManagerDialog';
 import { KeyboardSelector } from '../features/keyboards/KeyboardSelector';
@@ -15,19 +15,19 @@ import { useKeyboardRegistry } from '../features/keyboards/useKeyboardRegistry';
 import { Onboarding } from '../features/onboarding/Onboarding';
 import { CreateProfileDialog, type NewProfileInput } from '../features/profiles/CreateProfileDialog';
 import { ProfileRail } from '../features/profiles/ProfileRail';
-import { SettingsView } from '../features/settings/SettingsView';
+import { SettingsDialog } from '../features/settings/SettingsDialog';
 import { RuntimeErrorDialog } from '../features/status/RuntimeErrorDialog';
 import { AppShell } from './AppShell';
 import { completeOnboarding } from './onboardingRuntime';
 import { autostartIssue, engineIssue, errorDetails, type RuntimeIssue } from './runtimeIssues';
 import { useRuntimeIssueQueue } from './useRuntimeIssueQueue';
-import { addLayer, layerMappings, makeAppProfile, setChordAction, setChordSets, setLayerMapping } from './profileHelpers';
+import { addLayer, clearLayerMapping, layerMappings, makeAppProfile, setChordAction, setChordSets, setLayerMapping } from './profileHelpers';
 
 type SelectedChord = { setIndex: number; chordIndex: number };
 
 const fallback: BootstrapState = {
   profiles: [],
-  settings: { onboardingCompleted: false, startWithSystem: true, remappingEnabled: true, stopKanataOnQuit: true, deviceLayoutOverrides: {}, uiMode: 'Beginner' },
+  settings: { onboardingCompleted: false, startWithSystem: true, remappingEnabled: true, stopKanataOnQuit: true, deviceLayoutOverrides: {}, uiMode: 'Beginner', leftRailWidth: 260, rightPaneWidth: 340 },
   devices: [], configuredKeyboards: [],
   capabilities: { platform: 'Windows', perAppAutoSwitch: true, perDeviceMapping: 'RequiresWindowsInterception', windowTitleMatching: true, manualProfileSelection: true, permissions: {} },
   engineStatuses: [], activeProfileId: 'global', health: 'Running',
@@ -42,7 +42,7 @@ export function App() {
   const [selectedChord, setSelectedChord] = useState<SelectedChord>();
   const [activeLayer, setActiveLayer] = useState('base');
   const [mode, setMode] = useState<UiMode>('Beginner');
-  const [view, setView] = useState<'editor' | 'settings'>('editor');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [managerOpen, setManagerOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
@@ -56,6 +56,7 @@ export function App() {
   const pending = useRef<StudioProfile | undefined>(undefined);
   const applying = useRef(false);
   const timer = useRef<number | undefined>(undefined);
+  const paneTimer = useRef<number | undefined>(undefined);
   const markRuntimeApplied = useCallback((engineStatuses: BootstrapState['engineStatuses']) => setState(old => ({ ...old, engineStatuses, health: 'Running' })), []);
   const retryRuntime = useCallback(async () => markRuntimeApplied(await applyRuntime()), [markRuntimeApplied]);
   const reportIssue = useCallback((issue: RuntimeIssue) => {
@@ -139,6 +140,10 @@ export function App() {
     }
     else if (selectedKey) queueApply(setLayerMapping(profile, activeLayer, selectedKey, action));
   };
+  const resetSelectedKey = () => {
+    if (!profile || !selectedKey || profile.source.kind !== 'visual') return;
+    queueApply(clearLayerMapping(profile, activeLayer, selectedKey));
+  };
   const onChordSetsChange = (sets: ChordSet[]) => {
     if (!profile || profile.source.kind !== 'visual') return;
     applyChordProfile(setChordSets(profile, sets));
@@ -157,6 +162,13 @@ export function App() {
   const onMode = (next: UiMode) => {
     setMode(next); if (next === 'Beginner') setSelectedChord(undefined);
     setState(old => ({ ...old, settings: { ...old.settings, uiMode: next } })); void updateSettings({ uiMode: next });
+  };
+  const onPaneWidthsChange = (leftRailWidth: number, rightPaneWidth: number) => {
+    setState(old => ({ ...old, settings: { ...old.settings, leftRailWidth, rightPaneWidth } }));
+    window.clearTimeout(paneTimer.current);
+    paneTimer.current = window.setTimeout(() => {
+      void updateSettings({ leftRailWidth, rightPaneWidth }).catch(() => undefined);
+    }, 220);
   };
   const onOnboarding = (settings: StudioSettings, first?: { name: string; exe: string }) => {
     setOnboardingBusy(true);
@@ -177,25 +189,41 @@ export function App() {
   };
   const manageKeyboard = async (id: string) => { await keyboard.select(id); setManagerOpen(true); };
   const selectProfile = (id: string) => {
-    setSelected(id); setActiveLayer('base'); setSelectedChord(undefined);
+    setSelected(id); setActiveLayer('base'); setSelectedChord(undefined); setSelectedKey(undefined);
     if (!state.capabilities.perAppAutoSwitch) void setManualProfile(id).then(engineStatuses => setState(old => ({ ...old, activeProfileId: id, engineStatuses }))).catch(error => reportIssue(engineIssue(error, retryRuntime)));
   };
-  const main = view === 'settings'
-    ? <SettingsView state={state} keyboards={keyboard.catalog} onStart={value => void saveSetting({ startWithSystem: value })} onStopKanataOnQuit={value => void saveSetting({ stopKanataOnQuit: value })} onManageKeyboard={id => void manageKeyboard(id)} onUpdate={checkUpdate} />
-    : !keyboard.selected?.configured ? <KeyboardSetupPane keyboard={keyboard.selected} onSetup={() => void keyboard.setupSelected()} />
+  const main = !keyboard.selected?.configured
+    ? <KeyboardSetupPane keyboard={keyboard.selected} onSetup={() => void keyboard.setupSelected()} />
     : mode === 'Advanced' && profile ? <AdvancedWorkspace profile={profile} layout={layout} activeLayer={activeLayer} selectedKey={selectedKey} direct={direct} inherited={inherited} preview={preview} onSelectKey={selectKey} onLayer={setActiveLayer} onAddLayer={onAddLayer} onChordSetsChange={onChordSetsChange} onSelectChord={selectChord} onConvertRaw={() => setConvertOpen(true)} onRawValidate={text => validateRawProfile({ text })} onRawApply={applyRaw} onPreview={() => void previewProfile(profile.id).then(result => setPreview(result.text))} />
-    : <KeyboardCanvas layout={layout} selected={selectedKey} onSelect={key => selectKey(key)} direct={direct} inherited={inherited} />;
-  const inspector = view === 'settings' ? <div className="inspector-body"><strong>Version</strong><p className="muted">Studio {state.version.studio}<br />Kanata {state.version.kanata}<br />{state.version.sha.slice(0, 12)}</p>{updateMessage && <p className="muted">{updateMessage}</p>}</div>
-    : !keyboard.selected?.configured ? <div className="empty-inspector">Set up this keyboard to edit mappings.</div>
-    : mode === 'Advanced' ? <AdvancedInspector keyId={selectedTarget} action={currentAction} onChange={setAction} status={applyState} /> : <KeyInspector keyId={selectedKey} action={currentAction} onChange={setAction} status={applyState} />;
+    : <KeyboardCanvas layout={layout} visualPreset={keyboard.selected?.visualPreset} selected={selectedKey} onSelect={key => selectKey(key)} direct={direct} inherited={inherited} />;
+  const inspector = !keyboard.selected?.configured ? <div className="empty-inspector">Set up this keyboard to edit mappings.</div>
+    : mode === 'Advanced' ? <AdvancedInspector keyId={selectedTarget} action={currentAction} onChange={setAction} status={applyState} />
+      : <div className="inspector-body"><strong>{selectedKey ? `Key ${selectedKey.toUpperCase()}` : 'Keyboard'}</strong><p className="muted">{selectedKey ? 'Edit this key in the modal.' : 'Select a key to edit its mapping.'}<br />{keyboard.selected?.name}</p></div>;
   const errorDialog = <RuntimeErrorDialog issue={runtimeIssue} busy={retrying} onRetry={() => void retryRuntimeIssue()} onLogs={() => void openLogs()} onDismiss={dismissRuntimeIssue} />;
   if (!state.settings.onboardingCompleted) return <><Onboarding devices={state.devices} capabilities={state.capabilities} settings={state.settings} busy={onboardingBusy} onFinish={onOnboarding} />{errorDialog}</>;
 
   return <>
-    <AppShell mode={mode} onMode={onMode} keyboardControl={<KeyboardSelector items={keyboard.catalog} selectedId={keyboard.selectedId} onSelect={id => { setActiveLayer('base'); setSelectedKey(undefined); setSelectedChord(undefined); void keyboard.select(id); }} onManage={() => setManagerOpen(true)} />} rail={<ProfileRail profiles={scopedProfiles} selected={profile?.id ?? ''} keyboardName={keyboard.selected?.name} canCreate={Boolean(keyboard.selected?.configured)} onSelect={selectProfile} onCreate={() => setCreateOpen(true)} />} main={main} inspector={inspector} status={runtimeLabel(state)} onSettings={() => setView(old => old === 'editor' ? 'settings' : 'editor')} onUndo={undoStack.length ? onUndo : undefined} onRestart={() => void restartRuntime()} />
+    <AppShell
+      mode={mode}
+      onMode={onMode}
+      keyboardControl={<KeyboardSelector items={keyboard.catalog} selectedId={keyboard.selectedId} onSelect={id => { setActiveLayer('base'); setSelectedKey(undefined); setSelectedChord(undefined); void keyboard.select(id); }} onManage={() => setManagerOpen(true)} />}
+      rail={<ProfileRail profiles={scopedProfiles} selected={profile?.id ?? ''} keyboardName={keyboard.selected?.name} canCreate={Boolean(keyboard.selected?.configured)} onSelect={selectProfile} onCreate={() => setCreateOpen(true)} />}
+      main={main}
+      inspector={inspector}
+      status={runtimeLabel(state)}
+      leftRailWidth={state.settings.leftRailWidth ?? 260}
+      rightPaneWidth={state.settings.rightPaneWidth ?? 340}
+      onPaneWidthsChange={onPaneWidthsChange}
+      onSettings={() => setSettingsOpen(true)}
+      onUndo={undoStack.length ? onUndo : undefined}
+      onRestart={() => void restartRuntime()}
+    />
     {createOpen && <CreateProfileDialog onClose={() => setCreateOpen(false)} onCreate={input => void onCreate(input)} />}
     <KeyboardManagerDialog open={managerOpen} keyboard={keyboard.selected} items={keyboard.catalog} onClose={() => setManagerOpen(false)} onSetup={keyboard.setupSelected} onUpdate={keyboard.update} onCopy={keyboard.copyFrom} onRefresh={keyboard.refresh} />
+    <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} state={state} keyboards={keyboard.catalog} onStart={value => void saveSetting({ startWithSystem: value })} onStopKanataOnQuit={value => void saveSetting({ stopKanataOnQuit: value })} onManageKeyboard={id => void manageKeyboard(id)} onUpdate={checkUpdate} />
+    {mode === 'Beginner' && selectedKey && <KeySettingsModal keyId={selectedKey} action={currentAction} directAction={direct[selectedKey]} inheritedAction={inherited[selectedKey]} onChange={setAction} onReset={resetSelectedKey} onClose={() => setSelectedKey(undefined)} status={applyState} />}
     <ConvertToRawDialog open={convertOpen} onCancel={() => setConvertOpen(false)} onConvert={() => void convertRaw()} />
+    {updateMessage && settingsOpen && <div className="sr-only" aria-live="polite">{updateMessage}</div>}
     {errorDialog}
   </>;
 
