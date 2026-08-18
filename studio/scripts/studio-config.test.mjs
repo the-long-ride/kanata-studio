@@ -44,6 +44,23 @@ test('onboarding persistence is separated from autostart and runtime activation'
   assert.match(lib, /commands::apply_runtime/);
 });
 
+test('profile edits are persisted before runtime activation so apply failures cannot erase mappings', () => {
+  const profiles = read('../src-tauri/src/commands/profiles.rs');
+  const commit = profiles.match(/pub\(crate\) fn commit_profile_set[\s\S]*?\n}\n/)[0];
+  const persistAt = commit.indexOf('persist_profile_set(state, next)');
+  const applyAt = commit.indexOf('apply_current_context(state)');
+  assert.ok(persistAt >= 0, 'commit_profile_set must persist the candidate profile set');
+  assert.ok(applyAt >= 0, 'commit_profile_set must attempt runtime activation');
+  assert.ok(
+    persistAt < applyAt,
+    'profile storage must be committed before runtime activation so a runtime failure cannot discard the edit',
+  );
+  assert.ok(
+    !commit.includes('*state.profiles.write() = previous'),
+    'runtime activation failure must not roll profile state back to the previous mappings',
+  );
+});
+
 test('blocking Studio commands use async Tauri dispatch', () => {
   const sources = [
     read('../src-tauri/src/commands/settings.rs'),

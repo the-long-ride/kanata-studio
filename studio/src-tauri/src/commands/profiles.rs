@@ -75,13 +75,14 @@ pub fn update_profile(
         .iter_mut()
         .find(|profile| profile.id == candidate.id)
         .expect("profile exists") = candidate.clone();
-    commit_profile_set(&state, next)?;
+    let runtime_error = commit_profile_set(&state, next)?;
+    let applied = runtime_error.is_none();
 
     Ok(ApplyResult {
         profile: candidate,
         validation: ValidationResult::ok(),
         engine_statuses: state.engine_statuses(),
-        applied: true,
+        applied,
     })
 }
 
@@ -96,7 +97,7 @@ pub fn delete_profile(state: State<'_, AppState>, id: String) -> Result<(), Stri
     if next.len() == before {
         return Err("profile not found".into());
     }
-    commit_profile_set(&state, next)
+    commit_profile_set(&state, next).map(|_| ())
 }
 
 pub(crate) fn persist_profile_set(
@@ -112,20 +113,29 @@ pub(crate) fn persist_profile_set(
     Ok(())
 }
 
-pub(crate) fn commit_profile_set(state: &AppState, next: Vec<StudioProfile>) -> Result<(), String> {
-    validate_profile_set(&next).map_err(|error| error.to_string())?;
-    let previous = state.profiles.read().clone();
-    *state.profiles.write() = next.clone();
+pub(crate) fn commit_profile_set(
+    state: &AppState,
+    next: Vec<StudioProfile>,
+) -> Result<Option<String>, String> {
+    persist_profile_set(state, next)?;
 
-    if let Err(error) = apply_current_context(state) {
-        *state.profiles.write() = previous;
-        let _ = apply_current_context(state);
-        return Err(error.to_string());
+    match apply_current_context(state) {
+        Ok(()) => {
+            *state.last_runtime_error.write() = None;
+            *state.health.write() = if state.settings.read().remapping_enabled {
+                crate::engine::RuntimeHealth::Running
+            } else {
+                crate::engine::RuntimeHealth::Paused
+            };
+            Ok(None)
+        }
+        Err(error) => {
+            let message = error.to_string();
+            *state.last_runtime_error.write() = Some(message.clone());
+            *state.health.write() = crate::engine::RuntimeHealth::RecoveryRequired {
+                message: message.clone(),
+            };
+            Ok(Some(message))
+        }
     }
-    if let Err(error) = state.profile_store.save_all(&next) {
-        *state.profiles.write() = previous;
-        let _ = apply_current_context(state);
-        return Err(error.to_string());
-    }
-    Ok(())
 }

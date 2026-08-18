@@ -62,13 +62,17 @@ pub fn set_raw_profile_text(
         kbd: input.text.clone(),
     };
     let saved = target.clone();
-    commit_profile_set(&state, next)?;
+    let runtime_error = commit_profile_set(&state, next)?;
+    let mut validation = validation;
+    if let Some(error) = &runtime_error {
+        validation.message = Some(error.clone());
+    }
 
     Ok(ApplyResult {
         profile: saved,
         validation,
         engine_statuses: state.engine_statuses(),
-        applied: true,
+        applied: runtime_error.is_none(),
     })
 }
 
