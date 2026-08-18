@@ -21,7 +21,7 @@ describe('AppShell', () => {
     expect(screen.queryByText('I am keyboard wizard')).toBeNull();
   });
 
-  it('renders custom window controls and resizable pane separators', () => {
+  it('renders custom window controls and resets only the pane beside each separator', () => {
     const onPaneWidthsChange = vi.fn();
     render(
       <Shell
@@ -30,18 +30,17 @@ describe('AppShell', () => {
         rail="rail"
         main="main"
         inspector="inspector"
-        leftRailWidth={260}
-        rightPaneWidth={340}
+        leftRailWidth={300}
+        rightPaneWidth={410}
         onPaneWidthsChange={onPaneWidthsChange}
       />,
     );
     expect(screen.getByRole('button', { name: 'Minimize window' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Maximize window' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Close window' })).toBeTruthy();
-    const left = screen.getByRole('separator', { name: 'Resize profile sidebar' });
-    const right = screen.getByRole('separator', { name: 'Resize inspector sidebar' });
-    fireEvent.doubleClick(left);
-    fireEvent.doubleClick(right);
-    expect(onPaneWidthsChange).toHaveBeenCalledWith(260, 340);
+    fireEvent.doubleClick(screen.getByRole('separator', { name: 'Resize profile sidebar' }));
+    expect(onPaneWidthsChange).toHaveBeenLastCalledWith(260, 410);
+    fireEvent.doubleClick(screen.getByRole('separator', { name: 'Resize inspector sidebar' }));
+    expect(onPaneWidthsChange).toHaveBeenLastCalledWith(300, 340);
   });
 });
