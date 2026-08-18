@@ -120,22 +120,28 @@ export function App() {
     setState(old => ({ ...old, profiles: old.profiles.map(item => item.id === next.id ? next : item) }));
     pending.current = next; window.clearTimeout(timer.current); timer.current = window.setTimeout(() => void flush(), 180);
   }, [flush, profile]);
+  const stageInvalidChordProfile = (next: StudioProfile) => {
+    window.clearTimeout(timer.current); pending.current = undefined;
+    setState(old => ({ ...old, profiles: old.profiles.map(item => item.id === next.id ? next : item) }));
+    setApplyState('Error');
+  };
+  const applyChordProfile = (next: StudioProfile) => {
+    if (next.source.kind !== 'visual') return;
+    const sets = next.source.advanced.chordSets ?? [];
+    const layers = ['base', ...next.source.advanced.layers.map(layer => layer.name)];
+    if (chordSetsValid(sets, layers)) queueApply(next);
+    else stageInvalidChordProfile(next);
+  };
   const setAction = (action: ActionSpec) => {
     if (!profile || profile.source.kind !== 'visual') return;
-    if (selectedChord && selectedChordEntry) queueApply(setChordAction(profile, selectedChord.setIndex, selectedChord.chordIndex, action));
+    if (selectedChord && selectedChordEntry) {
+      applyChordProfile(setChordAction(profile, selectedChord.setIndex, selectedChord.chordIndex, action));
+    }
     else if (selectedKey) queueApply(setLayerMapping(profile, activeLayer, selectedKey, action));
   };
   const onChordSetsChange = (sets: ChordSet[]) => {
     if (!profile || profile.source.kind !== 'visual') return;
-    const next = setChordSets(profile, sets);
-    const layers = ['base', ...profile.source.advanced.layers.map(layer => layer.name)];
-    if (chordSetsValid(sets, layers)) {
-      queueApply(next);
-      return;
-    }
-    window.clearTimeout(timer.current); pending.current = undefined;
-    setState(old => ({ ...old, profiles: old.profiles.map(item => item.id === next.id ? next : item) }));
-    setApplyState('Error');
+    applyChordProfile(setChordSets(profile, sets));
   };
   const selectKey = (key?: string) => { setSelectedKey(key); if (key) setSelectedChord(undefined); };
   const selectChord = (setIndex?: number, chordIndex?: number) => {
