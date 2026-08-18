@@ -61,6 +61,9 @@ it('edits layer scope without losing the all-layer default', () => {
   fireEvent.click(screen.getByLabelText('All layers'));
   fireEvent.click(screen.getByLabelText('nav'));
   expect(screen.getByTestId('state')).toHaveTextContent('"layers":["base"]');
+  fireEvent.click(screen.getByLabelText('base'));
+  expect(screen.getByTestId('state')).toHaveTextContent('"layers":["base"]');
+  expect(screen.getByLabelText('All layers')).not.toBeChecked();
 });
 
 it('shows a conflict for duplicate active physical combinations', () => {
