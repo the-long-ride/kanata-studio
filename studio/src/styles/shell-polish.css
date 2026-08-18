@@ -43,13 +43,8 @@
 .brand-logo {
   width: 20px;
   height: 20px;
-  display: grid;
-  place-items: center;
-  border-radius: 5px;
-  background: var(--text);
-  color: #111;
-  font-size: 11px;
-  font-weight: 800;
+  flex: 0 0 20px;
+  background: url('../../src-tauri/icons/32x32.png') center / contain no-repeat;
 }
 
 .window-controls {
