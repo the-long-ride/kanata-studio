@@ -34,3 +34,23 @@ impl ConfiguredKeyboard {
         self.product_id = device.product_id;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::ConfiguredKeyboard;
+
+    #[test]
+    fn legacy_keyboard_has_no_visual_override() {
+        let keyboard: ConfiguredKeyboard = serde_json::from_value(serde_json::json!({
+            "id": "keyboard-1",
+            "name": "Keyboard",
+            "detectedName": "Keyboard",
+            "vendorId": null,
+            "productId": null,
+            "layoutOverride": null
+        }))
+        .expect("legacy configured keyboard should deserialize");
+
+        assert_eq!(keyboard.visual_preset_override, None);
+    }
+}
