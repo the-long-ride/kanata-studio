@@ -18,10 +18,30 @@ pub enum DeviceTarget {
     Device { id: String },
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ChordEntry {
+    pub keys: Vec<String>,
+    pub action: ActionSpec,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ChordSet {
+    pub name: String,
+    pub timeout_ms: u32,
+    #[serde(default)]
+    pub layers: Vec<String>,
+    #[serde(default)]
+    pub chords: Vec<ChordEntry>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct AdvancedVisualConfig {
     pub layers: Vec<VisualLayer>,
+    #[serde(default)]
+    pub chord_sets: Vec<ChordSet>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -108,6 +128,38 @@ pub fn device_global_profile(device_id: &str, source: ProfileSource) -> StudioPr
     }
 }
 
+fn chord_scopes_overlap(left: &[String], right: &[String]) -> bool {
+    left.is_empty()
+        || right.is_empty()
+        || left.iter().any(|layer| right.iter().any(|other| other == layer))
+}
+
+fn validate_chord_set_conflicts(profile: &StudioProfile) -> Result<(), DomainError> {
+    let ProfileSource::Visual { advanced, .. } = &profile.source else {
+        return Ok(());
+    };
+    let mut seen: BTreeMap<Vec<String>, Vec<&[String]>> = BTreeMap::new();
+    for set in &advanced.chord_sets {
+        for chord in &set.chords {
+            let mut keys = chord.keys.clone();
+            keys.sort();
+            let scopes = seen.entry(keys.clone()).or_default();
+            if scopes
+                .iter()
+                .any(|scope| chord_scopes_overlap(scope, &set.layers))
+            {
+                return Err(DomainError::Invalid(format!(
+                    "duplicate active chord in profile {}: {}",
+                    profile.name,
+                    keys.join("+")
+                )));
+            }
+            scopes.push(&set.layers);
+        }
+    }
+    Ok(())
+}
+
 pub fn validate_profile_set(profiles: &[StudioProfile]) -> Result<(), DomainError> {
     let global_count = profiles
         .iter()
@@ -132,6 +184,7 @@ pub fn validate_profile_set(profiles: &[StudioProfile]) -> Result<(), DomainErro
                 "profile id/name cannot be blank".into(),
             ));
         }
+        validate_chord_set_conflicts(profile)?;
     }
     Ok(())
 }
@@ -171,5 +224,34 @@ mod tests {
             panic!("expected visual profile");
         };
         assert!(advanced.chord_sets.is_empty());
+    }
+
+    #[test]
+    fn rejects_equal_precedence_chord_conflicts() {
+        let mut profile = global_profile();
+        let ProfileSource::Visual { advanced, .. } = &mut profile.source else {
+            unreachable!();
+        };
+        advanced.chord_sets = vec![
+            ChordSet {
+                name: "One".into(),
+                timeout_ms: 50,
+                layers: vec![],
+                chords: vec![ChordEntry {
+                    keys: vec!["j".into(), "k".into()],
+                    action: ActionSpec::Key { key: "esc".into() },
+                }],
+            },
+            ChordSet {
+                name: "Two".into(),
+                timeout_ms: 50,
+                layers: vec!["base".into()],
+                chords: vec![ChordEntry {
+                    keys: vec!["k".into(), "j".into()],
+                    action: ActionSpec::Key { key: "tab".into() },
+                }],
+            },
+        ];
+        assert!(validate_profile_set(&[profile]).is_err());
     }
 }
