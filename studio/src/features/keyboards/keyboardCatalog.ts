@@ -14,7 +14,7 @@ export type KeyboardCatalogItem = {
   connected: boolean;
   layout: KeyboardDevice['layout'];
   layoutOverride?: KeyboardDevice['manualLayout'];
-  visualPreset: KeyboardVisualPreset;
+  visualPreset?: KeyboardVisualPreset;
   visualPresetOverride?: KeyboardVisualPreset | null;
   vendorId?: number | null;
   productId?: number | null;
@@ -24,14 +24,14 @@ export function resolveVisualPreset(input: {
   override?: KeyboardVisualPreset | null;
   name: string;
   layout: KeyboardLayout | string;
-}): KeyboardVisualPreset {
+}): KeyboardVisualPreset | undefined {
   if (input.override) return input.override;
   const name = input.name.toLowerCase();
   if (/\b(tkl|tenkeyless)\b|keychron\s*k8\b/.test(name)) return 'tkl';
   if (/\b75\b|air\s*75|air75|keychron\s*k2\b|keychron\s*q1\b/.test(name)) return '75';
   if (/\b65\b|keychron\s*k6\b|keychron\s*q2\b/.test(name)) return '65';
   if (/\b60\b|poker|anne\s*pro/.test(name)) return '60';
-  return 'fullsize';
+  return undefined;
 }
 
 export function buildKeyboardCatalog(
