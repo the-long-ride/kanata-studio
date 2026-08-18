@@ -27,6 +27,14 @@ jobs:
         working-directory: studio
       - run: pnpm build
         working-directory: studio
+      - run: pnpm lint:lines
+        working-directory: studio
+      - run: pnpm test:lines
+        working-directory: studio
+      - run: pnpm test:rules
+        working-directory: studio
+      - run: pnpm test:config
+        working-directory: studio
 
   rust-format:
     runs-on: ubuntu-latest
