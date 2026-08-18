@@ -57,12 +57,26 @@ const fnLegends: Record<string, string> = {
   f12: 'End',
 };
 
+const compactFnLegends: Record<string, string> = {
+  ...fnLegends,
+  '1': 'Mute',
+  '2': 'Vol −',
+  '3': 'Vol +',
+  '4': 'Mic',
+  '5': 'Bright −',
+  '6': 'Bright +',
+  '7': 'Previous',
+  '8': 'Play/Pause',
+  '9': 'Next',
+  '0': 'Stop',
+};
+
 export const keyboardPresets: Record<KeyboardVisualPreset, KeyboardPreset> = {
   fullsize: { id: 'fullsize', label: 'Full size', keys: [...ansi, ...navKeys, ...numpad], fnLegends, fnKey: { id: 'fn', remappable: false } },
   tkl: { id: 'tkl', label: 'TKL', keys: [...ansi, ...navKeys], fnLegends, fnKey: { id: 'fn', remappable: false } },
   '75': { id: '75', label: '75%', keys: [...replaceMenuWithFn(ansi), ...compactNav], fnLegends, fnKey: { id: 'fn', remappable: false } },
-  '65': { id: '65', label: '65%', keys: [...replaceMenuWithFn(ansi.filter(item => !/^f\d+$/.test(item.id))), ...compactNav.filter(item => ['del', 'up', 'left', 'down', 'right'].includes(item.id))], fnLegends, fnKey: { id: 'fn', remappable: false } },
-  '60': { id: '60', label: '60%', keys: replaceMenuWithFn(ansi.filter(item => !/^f\d+$/.test(item.id))), fnLegends, fnKey: { id: 'fn', remappable: false } },
+  '65': { id: '65', label: '65%', keys: [...replaceMenuWithFn(ansi.filter(item => !/^f\d+$/.test(item.id))), ...compactNav.filter(item => ['del', 'up', 'left', 'down', 'right'].includes(item.id))], fnLegends: compactFnLegends, fnKey: { id: 'fn', remappable: false } },
+  '60': { id: '60', label: '60%', keys: replaceMenuWithFn(ansi.filter(item => !/^f\d+$/.test(item.id))), fnLegends: compactFnLegends, fnKey: { id: 'fn', remappable: false } },
 };
 
 export function presetKeys(preset: KeyboardVisualPreset | undefined, layout: KeyboardLayout): KeyboardPreset {
