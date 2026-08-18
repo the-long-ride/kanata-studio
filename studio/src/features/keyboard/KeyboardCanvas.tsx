@@ -17,6 +17,8 @@ export function KeyboardCanvas({ layout, visualPreset, selected, onSelect, direc
   const bounds = useMemo(() => boardBounds(preset.keys), [preset.keys]);
   const [pressed, setPressed] = useState<Set<string>>(() => new Set());
   const [layerView, setLayerView] = useState<'base' | 'fn'>('base');
+  const hasFnLayer = Object.keys(preset.fnLegends).length > 0;
+  const visibleLayer = hasFnLayer ? layerView : 'base';
 
   useEffect(() => {
     const setKeyPressed = (code: string, down: boolean) => {
@@ -46,8 +48,8 @@ export function KeyboardCanvas({ layout, visualPreset, selected, onSelect, direc
 
   return <div className="keyboard-wrap">
     <div className="keyboard-view-toolbar" role="group" aria-label="Keyboard layer view">
-      <button type="button" className={layerView === 'base' ? 'active' : ''} onClick={() => setLayerView('base')}>Base layer</button>
-      <button type="button" className={layerView === 'fn' ? 'active' : ''} onClick={() => setLayerView('fn')}>Fn layer</button>
+      <button type="button" className={visibleLayer === 'base' ? 'active' : ''} onClick={() => setLayerView('base')}>Base layer</button>
+      {hasFnLayer && <button type="button" className={visibleLayer === 'fn' ? 'active' : ''} onClick={() => setLayerView('fn')}>Fn layer</button>}
       <span>{preset.label}</span>
       {preset.fnKey && !preset.fnKey.remappable && <span className="fn-hardware-status">Fn · Hardware-controlled</span>}
     </div>
@@ -62,8 +64,8 @@ export function KeyboardCanvas({ layout, visualPreset, selected, onSelect, direc
           pressed={pressed.has(key.id)}
           overridden={key.id in direct}
           inherited={!(key.id in direct) && key.id in inherited}
-          displayLabel={layerView === 'fn' ? fnLegend ?? key.label : key.label}
-          fnLegend={layerView === 'base' ? fnLegend : undefined}
+          displayLabel={visibleLayer === 'fn' ? fnLegend ?? key.label : key.label}
+          fnLegend={visibleLayer === 'base' ? fnLegend : undefined}
           hardwareControlled={hardwareControlled}
           onSelect={() => onSelect(key.id)}
         />;
