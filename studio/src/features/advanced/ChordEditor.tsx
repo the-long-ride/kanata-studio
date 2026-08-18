@@ -108,6 +108,7 @@ export function ChordEditor({ chordSets, layers, onChange, onSelect }: Props) {
   };
   const toggleLayer = (layer: string, checked: boolean) => {
     if (!set || set.layers.length === 0) return;
+    if (!checked && set.layers.length === 1 && set.layers[0] === layer) return;
     const nextLayers = checked ? [...new Set([...set.layers, layer])]
       : set.layers.filter((item) => item !== layer);
     replaceSet(activeSet, { ...set, layers: nextLayers });
