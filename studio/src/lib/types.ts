@@ -86,7 +86,7 @@ export type AdvancedVisualConfig = {
         name: string;
         mappings: Record<string, ActionSpec>;
     }>;
-    chordSets: ChordSet[];
+    chordSets?: ChordSet[];
 };
 export type ProfileSource = {
     kind: 'visual';
