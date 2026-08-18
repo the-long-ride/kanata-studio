@@ -24,6 +24,19 @@ test('macOS Studio bundle targets 10.15 or newer', () => {
   assert.equal(config.bundle?.macOS?.minimumSystemVersion, '10.15');
 });
 
+test('custom title bar has permission for every window action it invokes', () => {
+  const capability = json('../src-tauri/capabilities/default.json');
+  const permissions = new Set(capability.permissions ?? []);
+  for (const permission of [
+    'core:window:allow-minimize',
+    'core:window:allow-toggle-maximize',
+    'core:window:allow-close',
+    'core:window:allow-start-dragging',
+  ]) {
+    assert.ok(permissions.has(permission), `${permission} is required by the custom title bar`);
+  }
+});
+
 test('onboarding persistence is separated from autostart and runtime activation', () => {
   const settings = read('../src-tauri/src/commands/settings.rs');
   const profiles = read('../src-tauri/src/commands/profiles.rs');
