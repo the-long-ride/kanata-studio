@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../../components/Button';
 import type { ChordEntry, ChordSet } from '../../lib/types';
 import { keyboardEventCodeToKanataId } from '../keyboard/keyEventCode';
+import { chordConflictIds } from './chordValidation';
 
 type Props = {
   chordSets: ChordSet[];
@@ -9,45 +10,14 @@ type Props = {
   onChange: (sets: ChordSet[]) => void;
   onSelect: (setIndex: number, chordIndex: number) => void;
 };
-
 type Recording = { setIndex: number; chordIndex: number };
-
-function canonical(keys: string[]) {
-  return [...new Set(keys)].sort().join('+');
-}
-
-function scopesOverlap(left: string[], right: string[]) {
-  return left.length === 0 || right.length === 0
-    || left.some((layer) => right.includes(layer));
-}
-
-function conflictIds(sets: ChordSet[]) {
-  const conflicts = new Set<string>();
-  const entries = sets.flatMap((set, setIndex) => set.chords.map((chord, chordIndex) => ({
-    id: `${setIndex}:${chordIndex}`,
-    keys: canonical(chord.keys),
-    layers: set.layers,
-  })));
-  for (let left = 0; left < entries.length; left += 1) {
-    for (let right = left + 1; right < entries.length; right += 1) {
-      if (entries[left].keys && entries[left].keys === entries[right].keys
-        && scopesOverlap(entries[left].layers, entries[right].layers)) {
-        conflicts.add(entries[left].id);
-        conflicts.add(entries[right].id);
-      }
-    }
-  }
-  return conflicts;
-}
 
 function keyLabel(key: string) {
   return /^[a-z]$/.test(key) ? key.toUpperCase() : key;
 }
-
 function chordLabel(chord: ChordEntry) {
   return chord.keys.map(keyLabel).join(' + ') || 'Record keys';
 }
-
 function actionLabel(chord: ChordEntry) {
   if (chord.action.type === 'key') return keyLabel(chord.action.key);
   if (chord.action.type === 'shortcut') {
@@ -60,20 +30,12 @@ export function ChordEditor({ chordSets, layers, onChange, onSelect }: Props) {
   const [activeSet, setActiveSet] = useState(0);
   const [recording, setRecording] = useState<Recording>();
   const set = chordSets[activeSet];
-  const conflicts = useMemo(() => conflictIds(chordSets), [chordSets]);
+  const conflicts = useMemo(() => chordConflictIds(chordSets), [chordSets]);
 
   const replaceSet = (setIndex: number, nextSet: ChordSet) => {
     const next = [...chordSets];
     next[setIndex] = nextSet;
     onChange(next);
-  };
-
-  const replaceChord = (target: Recording, nextChord: ChordEntry) => {
-    const targetSet = chordSets[target.setIndex];
-    if (!targetSet) return;
-    const chords = [...targetSet.chords];
-    chords[target.chordIndex] = nextChord;
-    replaceSet(target.setIndex, { ...targetSet, chords });
   };
 
   useEffect(() => {
@@ -83,34 +45,34 @@ export function ChordEditor({ chordSets, layers, onChange, onSelect }: Props) {
       const key = keyboardEventCodeToKanataId(event.code);
       if (!key) return;
       event.preventDefault();
-      const current = chordSets[recording.setIndex]?.chords[recording.chordIndex];
-      if (!current || current.keys.includes(key)) return;
+      const targetSet = chordSets[recording.setIndex];
+      const current = targetSet?.chords[recording.chordIndex];
+      if (!targetSet || !current || current.keys.includes(key)) return;
       const keys = [...current.keys, key];
-      replaceChord(recording, { ...current, keys });
+      const chords = [...targetSet.chords];
+      chords[recording.chordIndex] = { ...current, keys };
+      const next = [...chordSets];
+      next[recording.setIndex] = { ...targetSet, chords };
+      onChange(next);
       if (keys.length >= 2) setRecording(undefined);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [chordSets, recording]);
+  }, [chordSets, onChange, recording]);
 
   const addSet = () => {
     const next: ChordSet = {
-      name: `Chord Set ${chordSets.length + 1}`,
-      timeoutMs: 50,
-      layers: [],
-      chords: [],
+      name: `Chord Set ${chordSets.length + 1}`, timeoutMs: 50, layers: [], chords: [],
     };
     onChange([...chordSets, next]);
     setActiveSet(chordSets.length);
   };
-
   const deleteSet = () => {
     if (!set) return;
     onChange(chordSets.filter((_, index) => index !== activeSet));
     setActiveSet(Math.max(0, activeSet - 1));
     setRecording(undefined);
   };
-
   const addChord = () => {
     if (!set) return;
     const chord: ChordEntry = { keys: [], action: { type: 'key', key: 'esc' } };
@@ -118,34 +80,24 @@ export function ChordEditor({ chordSets, layers, onChange, onSelect }: Props) {
     replaceSet(activeSet, { ...set, chords: [...set.chords, chord] });
     setRecording({ setIndex: activeSet, chordIndex });
   };
-
   const removeChord = (chordIndex: number) => {
     if (!set) return;
-    replaceSet(activeSet, {
-      ...set,
-      chords: set.chords.filter((_, index) => index !== chordIndex),
-    });
+    replaceSet(activeSet, { ...set, chords: set.chords.filter((_, index) => index !== chordIndex) });
     setRecording(undefined);
   };
-
   const setManualKeys = (chordIndex: number, value: string) => {
     if (!set) return;
     const keys = value.toLowerCase().split(/[+,\s]+/).filter(Boolean);
-    const chord = set.chords[chordIndex];
     const chords = [...set.chords];
-    chords[chordIndex] = { ...chord, keys: [...new Set(keys)] };
+    chords[chordIndex] = { ...set.chords[chordIndex], keys: [...new Set(keys)] };
     replaceSet(activeSet, { ...set, chords });
   };
-
   const toggleAllLayers = (checked: boolean) => {
-    if (!set) return;
-    replaceSet(activeSet, { ...set, layers: checked ? [] : [...layers] });
+    if (set) replaceSet(activeSet, { ...set, layers: checked ? [] : [...layers] });
   };
-
   const toggleLayer = (layer: string, checked: boolean) => {
     if (!set || set.layers.length === 0) return;
-    const nextLayers = checked
-      ? [...new Set([...set.layers, layer])]
+    const nextLayers = checked ? [...new Set([...set.layers, layer])]
       : set.layers.filter((item) => item !== layer);
     replaceSet(activeSet, { ...set, layers: nextLayers });
   };
@@ -154,12 +106,9 @@ export function ChordEditor({ chordSets, layers, onChange, onSelect }: Props) {
     <aside className="chord-set-rail">
       <div className="panel-title">Chord Sets</div>
       <div className="chord-set-list">
-        {chordSets.map((item, index) => <button
-          key={`${item.name}-${index}`}
-          className={index === activeSet ? 'active' : ''}
-          aria-pressed={index === activeSet}
-          onClick={() => setActiveSet(index)}
-        >{item.name || 'Untitled set'}</button>)}
+        {chordSets.map((item, index) => <button key={`${item.name}-${index}`}
+          className={index === activeSet ? 'active' : ''} aria-pressed={index === activeSet}
+          onClick={() => setActiveSet(index)}>{item.name || 'Untitled set'}</button>)}
       </div>
       <Button onClick={addSet}>Add chord set</Button>
     </aside>
@@ -171,8 +120,7 @@ export function ChordEditor({ chordSets, layers, onChange, onSelect }: Props) {
           <label className="field">Timeout (ms)<input className="ui-input" aria-label="Chord timeout"
             type="number" min={1} value={set.timeoutMs}
             onChange={(event) => replaceSet(activeSet, { ...set, timeoutMs: Number(event.target.value) })}/></label>
-          <div className="chord-layer-scope">
-            <span>Active layers</span>
+          <div className="chord-layer-scope"><span>Active layers</span>
             <label><input type="checkbox" aria-label="All layers" checked={set.layers.length === 0}
               onChange={(event) => toggleAllLayers(event.target.checked)}/> All</label>
             {layers.map((layer) => <label key={layer}><input type="checkbox" aria-label={layer}
