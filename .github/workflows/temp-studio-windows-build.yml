@@ -3,6 +3,10 @@ name: temp-studio-windows-build
 on:
   push:
     branches: ["feat/add-GUI"]
+  pull_request:
+    branches: ["feat/add-GUI"]
+    paths:
+      - "studio/.build-windows-trigger"
 
 jobs:
   windows-x64:
