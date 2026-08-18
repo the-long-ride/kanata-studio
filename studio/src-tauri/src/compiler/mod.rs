@@ -1,5 +1,8 @@
 pub mod advanced;
 pub mod basic;
+pub mod chords;
+#[cfg(test)]
+mod chords_test;
 pub mod device_scope;
 pub mod escape;
 pub mod mac_device;
@@ -107,6 +110,15 @@ pub fn compile_visual(
         text.push_str(")\n");
     }
 
+    let mut chord_layers = vec!["base".to_string()];
+    chord_layers.extend(profile.layers.iter().map(|layer| layer.name.clone()));
+    text.push_str(&chords::compile_chords(
+        &profile.chord_sets,
+        &chord_layers,
+        context.platform,
+        &mut external,
+    )?);
+
     if external
         .iter()
         .any(|(_, action)| matches!(action, StudioExternalAction::Text { .. }))
@@ -137,6 +149,7 @@ mod tests {
             contributing_profile_ids: Vec::new(),
             mappings,
             layers: Vec::new(),
+            chord_sets: Vec::new(),
             raw_kbd: None,
         }
     }

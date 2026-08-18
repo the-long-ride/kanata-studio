@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use super::{
-    ActionSpec, DeviceTarget, DomainError, ProfileSource, StudioProfile, UiMode, VisualLayer,
-    validate_profile_set,
+    ActionSpec, ChordSet, DeviceTarget, DomainError, ProfileSource, StudioProfile, UiMode,
+    VisualLayer, validate_profile_set,
 };
 
 pub struct ResolutionContext<'a> {
@@ -17,6 +17,7 @@ pub struct ResolvedProfile {
     pub contributing_profile_ids: Vec<String>,
     pub mappings: BTreeMap<String, ActionSpec>,
     pub layers: Vec<VisualLayer>,
+    pub chord_sets: Vec<ChordSet>,
     pub raw_kbd: Option<String>,
 }
 
@@ -80,12 +81,14 @@ pub fn resolve_profile(
             contributing_profile_ids: vec![top.id.clone()],
             mappings: BTreeMap::new(),
             layers: Vec::new(),
+            chord_sets: Vec::new(),
             raw_kbd: Some(kbd.clone()),
         });
     }
 
     let mut mappings = BTreeMap::new();
     let mut layer_map = BTreeMap::<String, VisualLayer>::new();
+    let mut chord_sets = Vec::new();
     let mut ids = Vec::new();
     for (_, _, profile) in candidates {
         if let ProfileSource::Visual {
@@ -97,6 +100,7 @@ pub fn resolve_profile(
             for layer in &advanced.layers {
                 layer_map.insert(layer.name.clone(), layer.clone());
             }
+            chord_sets.extend(advanced.chord_sets.clone());
             ids.push(profile.id.clone());
         }
     }
@@ -105,6 +109,7 @@ pub fn resolve_profile(
         contributing_profile_ids: ids,
         mappings,
         layers: layer_map.into_values().collect(),
+        chord_sets,
         raw_kbd: None,
     })
 }
@@ -112,7 +117,19 @@ pub fn resolve_profile(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{AppMatcher, ProfileSource, global_profile};
+    use crate::domain::{AppMatcher, ChordEntry, ProfileSource, global_profile};
+
+    fn chord_set(name: &str, output: &str) -> ChordSet {
+        ChordSet {
+            name: name.into(),
+            timeout_ms: 50,
+            layers: vec![],
+            chords: vec![ChordEntry {
+                keys: vec!["j".into(), "k".into()],
+                action: ActionSpec::Key { key: output.into() },
+            }],
+        }
+    }
 
     #[test]
     fn app_profile_overrides_global_mapping() {
@@ -149,6 +166,39 @@ mod tests {
     }
 
     #[test]
+    fn chord_sets_preserve_profile_precedence_order() {
+        let mut global = global_profile();
+        if let ProfileSource::Visual { advanced, .. } = &mut global.source {
+            advanced.chord_sets.push(chord_set("Global chord", "esc"));
+        }
+
+        let mut app = global_profile();
+        app.id = "app".into();
+        app.name = "App".into();
+        app.app_matcher = Some(AppMatcher {
+            executable: "code".into(),
+            window_title_contains: None,
+        });
+        if let ProfileSource::Visual { advanced, .. } = &mut app.source {
+            advanced.chord_sets.push(chord_set("App chord", "p"));
+        }
+
+        let resolved = resolve_profile(
+            &[global, app],
+            ResolutionContext {
+                executable: Some("code"),
+                window_title: None,
+                device_id: None,
+                ui_mode: UiMode::Advanced,
+            },
+        )
+        .unwrap();
+        assert_eq!(resolved.chord_sets.len(), 2);
+        assert_eq!(resolved.chord_sets[0].name, "Global chord");
+        assert_eq!(resolved.chord_sets[1].name, "App chord");
+    }
+
+    #[test]
     fn highest_priority_raw_profile_becomes_source_of_truth() {
         let global = global_profile();
         let mut app = global_profile();
@@ -173,6 +223,7 @@ mod tests {
         )
         .unwrap();
         assert!(resolved.raw_kbd.is_some());
+        assert!(resolved.chord_sets.is_empty());
         assert_eq!(resolved.contributing_profile_ids, vec!["raw-app"]);
     }
 }
