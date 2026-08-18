@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import type {
   BootstrapState,
   KeyboardLayout,
+  KeyboardVisualPreset,
   StudioProfile,
 } from '../../lib/types';
 import {
@@ -19,6 +20,7 @@ type KeyboardUpdateInput = {
   id: string;
   name?: string;
   layoutOverride: KeyboardLayout | null;
+  visualPresetOverride?: KeyboardVisualPreset | null;
 };
 
 export function useKeyboardRegistry({
