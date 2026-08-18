@@ -1,4 +1,4 @@
-import type { ActionSpec, StudioProfile } from '../lib/types';
+import type { ActionSpec, ChordSet, StudioProfile } from '../lib/types';
 export function layerMappings(profile: StudioProfile | undefined, layer: string) {
     if (!profile || profile.source.kind !== 'visual')
         return {};
@@ -31,7 +31,21 @@ export function setLayerMapping(profile: StudioProfile, layer: string, key: stri
     }
     return {
         ...profile,
-        source: { ...profile.source, advanced: { layers } },
+        source: {
+            ...profile.source,
+            advanced: { ...profile.source.advanced, layers },
+        },
+    };
+}
+export function setChordSets(profile: StudioProfile, chordSets: ChordSet[]): StudioProfile {
+    if (profile.source.kind !== 'visual')
+        return profile;
+    return {
+        ...profile,
+        source: {
+            ...profile.source,
+            advanced: { ...profile.source.advanced, chordSets },
+        },
     };
 }
 export function addLayer(profile: StudioProfile, name: string): StudioProfile {
@@ -44,6 +58,7 @@ export function addLayer(profile: StudioProfile, name: string): StudioProfile {
         source: {
             ...profile.source,
             advanced: {
+                ...profile.source.advanced,
                 layers: [...profile.source.advanced.layers, { name, mappings: {} }],
             },
         },
@@ -57,6 +72,10 @@ export function makeAppProfile(name: string, executable: string, deviceId?: stri
         enabled: true,
         appMatcher: { executable, windowTitleContains: null },
         deviceTarget: deviceId ? { kind: 'device', id: deviceId } : { kind: 'all' },
-        source: { kind: 'visual', mappings: {}, advanced: { layers: [] } },
+        source: {
+            kind: 'visual',
+            mappings: {},
+            advanced: { layers: [], chordSets: [] },
+        },
     };
 }
