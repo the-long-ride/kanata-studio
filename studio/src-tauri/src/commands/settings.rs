@@ -37,16 +37,10 @@ pub fn update_settings(
     {
         settings.onboarding_completed = value;
     }
-    if let Some(value) = input
-        .get("leftRailWidth")
-        .and_then(|value| value.as_u64())
-    {
+    if let Some(value) = input.get("leftRailWidth").and_then(|value| value.as_u64()) {
         settings.left_rail_width = value.clamp(180, 420) as u16;
     }
-    if let Some(value) = input
-        .get("rightPaneWidth")
-        .and_then(|value| value.as_u64())
-    {
+    if let Some(value) = input.get("rightPaneWidth").and_then(|value| value.as_u64()) {
         settings.right_pane_width = value.clamp(260, 520) as u16;
     }
     if let Some(value) = input.get("uiMode").and_then(|value| value.as_str()) {
