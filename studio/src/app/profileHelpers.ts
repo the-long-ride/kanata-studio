@@ -37,6 +37,28 @@ export function setLayerMapping(profile: StudioProfile, layer: string, key: stri
         },
     };
 }
+export function clearLayerMapping(profile: StudioProfile, layer: string, key: string): StudioProfile {
+    if (profile.source.kind !== 'visual')
+        return profile;
+    if (layer === 'base') {
+        const mappings = { ...profile.source.mappings };
+        delete mappings[key];
+        return { ...profile, source: { ...profile.source, mappings } };
+    }
+    const layers = profile.source.advanced.layers.map(item => {
+        if (item.name !== layer) return item;
+        const mappings = { ...item.mappings };
+        delete mappings[key];
+        return { ...item, mappings };
+    });
+    return {
+        ...profile,
+        source: {
+            ...profile.source,
+            advanced: { ...profile.source.advanced, layers },
+        },
+    };
+}
 export function setChordSets(profile: StudioProfile, chordSets: ChordSet[]): StudioProfile {
     if (profile.source.kind !== 'visual')
         return profile;
