@@ -1,0 +1,149 @@
+.advanced-layout.chord-mode {
+  grid-template-columns: minmax(0,1fr);
+}
+
+.chord-editor {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 180px minmax(0,1fr);
+}
+
+.chord-set-rail {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 40px minmax(0,1fr) auto;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.chord-set-rail > .ui-button {
+  margin: 8px;
+}
+
+.chord-set-list {
+  min-height: 0;
+  overflow: auto;
+  padding: 6px;
+}
+
+.chord-set-list button {
+  width: 100%;
+  min-height: 30px;
+  border: 0;
+  border-radius: 4px;
+  padding: 5px 8px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.chord-set-list button.active {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+.chord-set-main {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+
+.chord-set-fields {
+  display: grid;
+  grid-template-columns: minmax(160px,1fr) 120px minmax(240px,1.4fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.chord-layer-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  min-height: 32px;
+  font-size: 12px;
+}
+
+.chord-layer-scope > span {
+  width: 100%;
+  color: var(--muted);
+}
+
+.chord-list-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+}
+
+.chord-list-head .ui-button {
+  margin-left: auto;
+}
+
+.chord-list {
+  display: grid;
+  gap: 6px;
+}
+
+.chord-row {
+  display: grid;
+  grid-template-columns: minmax(110px,auto) 18px minmax(100px,auto) minmax(150px,1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 42px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface);
+}
+
+.chord-trigger,.chord-action {
+  min-height: 30px;
+  border: 0;
+  border-radius: 4px;
+  padding: 4px 8px;
+  background: var(--surface-2);
+  color: inherit;
+  font: inherit;
+}
+
+.chord-trigger {
+  font-weight: 600;
+}
+
+.chord-arrow {
+  color: var(--muted);
+  text-align: center;
+}
+
+.chord-manual {
+  min-width: 0;
+  font-family: ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+
+.chord-error {
+  grid-column: 1 / -1;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .chord-editor {
+    grid-template-columns: 150px minmax(0,1fr);
+  }
+
+  .chord-set-fields {
+    grid-template-columns: 1fr 110px;
+  }
+
+  .chord-row {
+    grid-template-columns: 1fr 18px 1fr;
+  }
+
+  .chord-manual {
+    grid-column: 1 / 4;
+  }
+}
