@@ -3,6 +3,8 @@ name: temp-studio-shell-verify
 on:
   push:
     branches: ["feat/studio-shell-keyboard-polish"]
+  pull_request:
+    branches: ["tmp/studio-shell-verify-base"]
 
 jobs:
   frontend:
