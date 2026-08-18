@@ -186,11 +186,7 @@ pub fn compile_chords(
     let mut rows = Vec::with_capacity(items.len());
     for (keys, bindings) in items {
         rows.push(row_for_chord(
-            &keys,
-            &bindings,
-            all_layers,
-            platform,
-            external,
+            &keys, &bindings, all_layers, platform, external,
         )?);
     }
     Ok(format!("\n(defchordsv2\n{}\n)\n", rows.join("\n")))

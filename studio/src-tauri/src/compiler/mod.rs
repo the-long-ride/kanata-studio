@@ -1,11 +1,11 @@
 pub mod advanced;
 pub mod basic;
 pub mod chords;
+#[cfg(test)]
+mod chords_test;
 pub mod device_scope;
 pub mod escape;
 pub mod mac_device;
-#[cfg(test)]
-mod chords_test;
 
 use std::collections::BTreeMap;
 

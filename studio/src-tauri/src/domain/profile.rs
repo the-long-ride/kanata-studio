@@ -131,7 +131,9 @@ pub fn device_global_profile(device_id: &str, source: ProfileSource) -> StudioPr
 fn chord_scopes_overlap(left: &[String], right: &[String]) -> bool {
     left.is_empty()
         || right.is_empty()
-        || left.iter().any(|layer| right.iter().any(|other| other == layer))
+        || left
+            .iter()
+            .any(|layer| right.iter().any(|other| other == layer))
 }
 
 fn validate_chord_set_conflicts(profile: &StudioProfile) -> Result<(), DomainError> {
