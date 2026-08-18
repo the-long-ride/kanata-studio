@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../../components/Button';
 import type { ChordEntry, ChordSet } from '../../lib/types';
 import { keyboardEventCodeToKanataId } from '../keyboard/keyEventCode';
-import { chordConflictIds } from './chordValidation';
+import { chordConflictIds, MAX_CHORD_TIMEOUT_MS } from './chordValidation';
 
 type Props = {
   chordSets: ChordSet[];
@@ -130,7 +130,7 @@ export function ChordEditor({ chordSets, layers, onChange, onSelect }: Props) {
           <label className="field">Name<input className="ui-input" value={set.name}
             onChange={(event) => replaceSet(activeSet, { ...set, name: event.target.value })}/></label>
           <label className="field">Timeout (ms)<input className="ui-input" aria-label="Chord timeout"
-            type="number" min={1} value={set.timeoutMs}
+            type="number" min={1} max={MAX_CHORD_TIMEOUT_MS} value={set.timeoutMs}
             onChange={(event) => replaceSet(activeSet, { ...set, timeoutMs: Number(event.target.value) })}/></label>
           <div className="chord-layer-scope"><span>Active layers</span>
             <label><input type="checkbox" aria-label="All layers" checked={set.layers.length === 0}
@@ -140,6 +140,9 @@ export function ChordEditor({ chordSets, layers, onChange, onSelect }: Props) {
               onChange={(event) => toggleLayer(layer, event.target.checked)}/> {layer}</label>)}
           </div>
           <Button onClick={deleteSet}>Delete set</Button>
+          {!set.name.trim() && <span className="chord-error">Chord Set name is required</span>}
+          {(!Number.isInteger(set.timeoutMs) || set.timeoutMs < 1 || set.timeoutMs > MAX_CHORD_TIMEOUT_MS)
+            && <span className="chord-error">Timeout must be 1–65535 ms</span>}
         </div>
         <div className="chord-list-head"><strong>Combinations</strong><Button onClick={addChord}>Add chord</Button></div>
         <div className="chord-list">
