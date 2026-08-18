@@ -4,10 +4,7 @@ import { makeAppProfile, setChordAction, setChordSets } from './profileHelpers';
 
 function profile(): StudioProfile {
   return {
-    id: 'global',
-    revision: 0,
-    name: 'Global',
-    enabled: true,
+    id: 'global', revision: 0, name: 'Global', enabled: true,
     deviceTarget: { kind: 'all' },
     source: {
       kind: 'visual',
@@ -15,9 +12,7 @@ function profile(): StudioProfile {
       advanced: {
         layers: [],
         chordSets: [{
-          name: 'Editing',
-          timeoutMs: 50,
-          layers: [],
+          name: 'Editing', timeoutMs: 50, layers: [],
           chords: [{ keys: ['j', 'k'], action: { type: 'key', key: 'esc' } }],
         }],
       },
@@ -34,13 +29,12 @@ describe('chord profile helpers', () => {
 
   it('updates a chord action without changing member key mappings', () => {
     const updated = setChordAction(profile(), 0, 0, {
-      type: 'advanced',
-      action: { type: 'macro', actions: [{ type: 'key', key: 'x' }] },
+      type: 'advanced', action: { type: 'macro', actions: [{ type: 'key', key: 'x' }] },
     });
     if (updated.source.kind !== 'visual') throw new Error('expected visual profile');
     expect(updated.source.mappings.j).toEqual({ type: 'key', key: 'j' });
     expect(updated.source.mappings.k).toEqual({ type: 'key', key: 'k' });
-    expect(updated.source.advanced.chordSets[0].chords[0].action.type).toBe('advanced');
+    expect(updated.source.advanced.chordSets?.[0].chords[0].action.type).toBe('advanced');
   });
 
   it('replaces chord sets while preserving layers', () => {
