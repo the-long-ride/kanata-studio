@@ -34,3 +34,16 @@ jobs:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo fmt --all -- --check
+
+  rust-studio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Tauri Linux dependencies
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - name: Provide test sidecar path
+        run: |
+          mkdir -p studio/src-tauri/binaries
+          touch studio/src-tauri/binaries/kanata-engine-x86_64-unknown-linux-gnu
+      - run: cargo test -p kanata-studio --lib
