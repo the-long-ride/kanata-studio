@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ActionSpec, KeyboardLayout } from '../../lib/types';
+import type { ActionSpec, KeyboardLayout, KeyboardVisualPreset } from '../../lib/types';
 import { keyboardEventCodeToKanataId } from './keyEventCode';
-import { boardBounds, presetKeys, type KeyboardVisualPreset } from './keyboardPresets';
+import { boardBounds, presetKeys } from './keyboardPresets';
 import { KeyboardKey } from './KeyboardKey';
 import './keyboard.css';
 
