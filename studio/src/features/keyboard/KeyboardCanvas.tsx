@@ -1,21 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ActionSpec, KeyboardLayout } from '../../lib/types';
 import { keyboardEventCodeToKanataId } from './keyEventCode';
-import { ansi } from './layouts/ansi';
-import { iso } from './layouts/iso';
-import { jis } from './layouts/jis';
+import { boardBounds, presetKeys, type KeyboardVisualPreset } from './keyboardPresets';
 import { KeyboardKey } from './KeyboardKey';
 import './keyboard.css';
 
-export function KeyboardCanvas({ layout, selected, onSelect, direct, inherited }: {
+export function KeyboardCanvas({ layout, visualPreset, selected, onSelect, direct, inherited }: {
   layout: KeyboardLayout;
+  visualPreset?: KeyboardVisualPreset;
   selected?: string;
   onSelect: (id: string) => void;
   direct: Record<string, ActionSpec>;
   inherited: Record<string, ActionSpec>;
 }) {
-  const keys = layout === 'Iso' ? iso : layout === 'Jis' ? jis : ansi;
+  const preset = useMemo(() => presetKeys(visualPreset, layout), [layout, visualPreset]);
+  const bounds = useMemo(() => boardBounds(preset.keys), [preset.keys]);
   const [pressed, setPressed] = useState<Set<string>>(() => new Set());
+  const [layerView, setLayerView] = useState<'base' | 'fn'>('base');
+
+  useEffect(() => {
+    setLayerView('base');
+  }, [visualPreset]);
 
   useEffect(() => {
     const setKeyPressed = (code: string, down: boolean) => {
@@ -43,15 +48,29 @@ export function KeyboardCanvas({ layout, selected, onSelect, direct, inherited }
     };
   }, []);
 
-  return <div className="keyboard-wrap"><div className="keyboard-board">{keys.map(key => (
-    <KeyboardKey
-      key={key.id}
-      keyDef={key}
-      selected={selected === key.id}
-      pressed={pressed.has(key.id)}
-      overridden={key.id in direct}
-      inherited={!(key.id in direct) && key.id in inherited}
-      onSelect={() => onSelect(key.id)}
-    />
-  ))}</div></div>;
+  return <div className="keyboard-wrap">
+    <div className="keyboard-view-toolbar" role="group" aria-label="Keyboard layer view">
+      <button type="button" className={layerView === 'base' ? 'active' : ''} onClick={() => setLayerView('base')}>Base layer</button>
+      <button type="button" className={layerView === 'fn' ? 'active' : ''} onClick={() => setLayerView('fn')}>Fn layer</button>
+      <span>{preset.label}</span>
+    </div>
+    <div className="keyboard-board" style={{ width: bounds.width, height: bounds.height }}>
+      {preset.keys.map(key => {
+        const hardwareControlled = preset.fnKey?.id === key.id && !preset.fnKey.remappable;
+        const fnLegend = preset.fnLegends[key.id];
+        return <KeyboardKey
+          key={key.id}
+          keyDef={key}
+          selected={selected === key.id}
+          pressed={pressed.has(key.id)}
+          overridden={key.id in direct}
+          inherited={!(key.id in direct) && key.id in inherited}
+          displayLabel={layerView === 'fn' ? fnLegend ?? key.label : key.label}
+          fnLegend={layerView === 'base' ? fnLegend : undefined}
+          hardwareControlled={hardwareControlled}
+          onSelect={() => onSelect(key.id)}
+        />;
+      })}
+    </div>
+  </div>;
 }
