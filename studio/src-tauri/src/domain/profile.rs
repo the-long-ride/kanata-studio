@@ -155,4 +155,21 @@ mod tests {
         };
         assert!(profile.visual_mappings().is_err());
     }
+
+    #[test]
+    fn visual_profile_without_chord_sets_deserializes_empty() {
+        let json = r#"{
+            "id":"global",
+            "revision":0,
+            "name":"Global",
+            "enabled":true,
+            "deviceTarget":{"kind":"all"},
+            "source":{"kind":"visual","mappings":{},"advanced":{"layers":[]}}
+        }"#;
+        let profile: StudioProfile = serde_json::from_str(json).unwrap();
+        let ProfileSource::Visual { advanced, .. } = profile.source else {
+            panic!("expected visual profile");
+        };
+        assert!(advanced.chord_sets.is_empty());
+    }
 }
