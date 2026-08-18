@@ -5,7 +5,7 @@ import { iso } from './layouts/iso';
 import { jis } from './layouts/jis';
 
 export type KeyboardPreset = {
-  id: KeyboardVisualPreset;
+  id: KeyboardVisualPreset | 'generic';
   label: string;
   keys: KeyGeometry[];
   fnLegends: Record<string, string>;
@@ -82,7 +82,7 @@ export const keyboardPresets: Record<KeyboardVisualPreset, KeyboardPreset> = {
 export function presetKeys(preset: KeyboardVisualPreset | undefined, layout: KeyboardLayout): KeyboardPreset {
   if (preset) return keyboardPresets[preset];
   const keys = layout === 'Iso' ? iso : layout === 'Jis' ? jis : ansi;
-  return { id: 'fullsize', label: layout, keys, fnLegends, fnKey: { id: 'fn', remappable: false } };
+  return { id: 'generic', label: layout, keys, fnLegends: {} };
 }
 
 export function boardBounds(keys: KeyGeometry[]): { width: number; height: number } {
