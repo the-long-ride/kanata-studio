@@ -19,10 +19,6 @@ export function KeyboardCanvas({ layout, visualPreset, selected, onSelect, direc
   const [layerView, setLayerView] = useState<'base' | 'fn'>('base');
 
   useEffect(() => {
-    setLayerView('base');
-  }, [visualPreset]);
-
-  useEffect(() => {
     const setKeyPressed = (code: string, down: boolean) => {
       const id = keyboardEventCodeToKanataId(code);
       if (!id) return;
