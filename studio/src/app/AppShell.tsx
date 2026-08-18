@@ -88,7 +88,7 @@ export function AppShell({
         role="separator"
         aria-label="Resize profile sidebar"
         onPointerDown={event => startResize('left', event)}
-        onDoubleClick={() => onPaneWidthsChange?.(DEFAULT_LEFT, DEFAULT_RIGHT)}
+        onDoubleClick={() => onPaneWidthsChange?.(DEFAULT_LEFT, rightPaneWidth)}
       />
       <main className="canvas">{main}</main>
       <div
@@ -96,7 +96,7 @@ export function AppShell({
         role="separator"
         aria-label="Resize inspector sidebar"
         onPointerDown={event => startResize('right', event)}
-        onDoubleClick={() => onPaneWidthsChange?.(DEFAULT_LEFT, DEFAULT_RIGHT)}
+        onDoubleClick={() => onPaneWidthsChange?.(leftRailWidth, DEFAULT_RIGHT)}
       />
       <aside className="inspector">{inspector}</aside>
     </div>
