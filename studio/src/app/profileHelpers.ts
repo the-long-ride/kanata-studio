@@ -48,6 +48,19 @@ export function setChordSets(profile: StudioProfile, chordSets: ChordSet[]): Stu
         },
     };
 }
+export function setChordAction(profile: StudioProfile, setIndex: number, chordIndex: number, action: ActionSpec): StudioProfile {
+    if (profile.source.kind !== 'visual')
+        return profile;
+    const set = profile.source.advanced.chordSets[setIndex];
+    const chord = set?.chords[chordIndex];
+    if (!set || !chord)
+        return profile;
+    const chords = [...set.chords];
+    chords[chordIndex] = { ...chord, action };
+    const chordSets = [...profile.source.advanced.chordSets];
+    chordSets[setIndex] = { ...set, chords };
+    return setChordSets(profile, chordSets);
+}
 export function addLayer(profile: StudioProfile, name: string): StudioProfile {
     if (profile.source.kind !== 'visual' || !name.trim())
         return profile;
