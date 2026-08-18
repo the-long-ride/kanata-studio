@@ -25,7 +25,7 @@ export function AdvancedWorkspace({
     onLayer: (layer: string) => void;
     onAddLayer: () => void;
     onChordSetsChange: (sets: ChordSet[]) => void;
-    onSelectChord: (setIndex: number, chordIndex: number) => void;
+    onSelectChord: (setIndex?: number, chordIndex?: number) => void;
     onConvertRaw: () => void;
     onRawValidate: (text: string) => Promise<{
         ok: boolean;
@@ -50,6 +50,7 @@ export function AdvancedWorkspace({
         setWorkspaceMode(next);
         setShowPreview(false);
         if (next === 'chords') onSelectKey(undefined);
+        else onSelectChord();
     };
     return (<div className={`advanced-layout ${workspaceMode === 'chords' ? 'chord-mode' : ''}`}>
       {workspaceMode === 'layers' && <aside className="layer-rail">
@@ -77,7 +78,7 @@ export function AdvancedWorkspace({
               chordSets={profile.source.advanced.chordSets}
               layers={layers}
               onChange={onChordSetsChange}
-              onSelect={onSelectChord}
+              onSelect={(setIndex, chordIndex) => onSelectChord(setIndex, chordIndex)}
             />
           ) : (<KeyboardCanvas layout={layout} selected={selectedKey}
             onSelect={key => onSelectKey(key)} direct={direct} inherited={inherited}/>)}
