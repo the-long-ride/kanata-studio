@@ -8,30 +8,6 @@ on:
         required: true
         type: boolean
         default: true
-  pull_request:
-    paths:
-      - 'studio/**'
-      - 'src/**'
-      - 'parser/**'
-      - 'tcp_protocol/**'
-      - 'keyberon/**'
-      - 'interception/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - '.github/workflows/kanata-gui.yml'
-  push:
-    branches: [main, feat/add-GUI]
-    tags: ['gui-v*']
-    paths:
-      - 'studio/**'
-      - 'src/**'
-      - 'parser/**'
-      - 'tcp_protocol/**'
-      - 'keyberon/**'
-      - 'interception/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - '.github/workflows/kanata-gui.yml'
 
 permissions:
   contents: read
