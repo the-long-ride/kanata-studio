@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { ApplyResult, BootstrapState, ConfiguredKeyboard, EngineStatus, KeyboardConfigurationResult, KeyboardDevice, KeyboardLayout, StudioProfile, StudioSettings, ValidationResult, } from './types';
+import type { ApplyResult, BootstrapState, ConfiguredKeyboard, EngineStatus, KeyboardConfigurationResult, KeyboardDevice, KeyboardLayout, KeyboardVisualPreset, StudioProfile, StudioSettings, ValidationResult, } from './types';
 export type PreviewResult = {
     text: string;
     validation: ValidationResult;
@@ -15,7 +15,7 @@ export const previewProfile = (id: string) => invoke<PreviewResult>('preview_pro
 export const readRuntimeConfig = (engineId: string) => invoke<string>('read_runtime_config', { engineId });
 export const listKeyboards = () => invoke<KeyboardDevice[]>('list_keyboards');
 export const configureKeyboard = (id: string) => invoke<KeyboardConfigurationResult>('configure_keyboard', { id });
-export const updateConfiguredKeyboard = (input: { id: string; name?: string; layoutOverride: KeyboardLayout | null }) => invoke<ConfiguredKeyboard>('update_configured_keyboard', { input });
+export const updateConfiguredKeyboard = (input: { id: string; name?: string; layoutOverride: KeyboardLayout | null; visualPresetOverride?: KeyboardVisualPreset | null }) => invoke<ConfiguredKeyboard>('update_configured_keyboard', { input });
 export const copyKeyboardConfiguration = (sourceId: string, targetId: string) => invoke<KeyboardConfigurationResult>('copy_keyboard_configuration', { sourceId, targetId });
 export const setRemappingEnabled = (enabled: boolean) => invoke<EngineStatus[]>('set_remapping_enabled', { enabled });
 export const restartEngines = () => invoke<EngineStatus[]>('restart_engines');
