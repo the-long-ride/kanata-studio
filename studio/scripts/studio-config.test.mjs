@@ -109,15 +109,18 @@ test('Windows Studio sidecars are headless without enabling Kanata legacy GUI', 
   assert.match(sidecars, /cmd,tcp_server,interception_driver,win_manifest,studio_sidecar/);
 });
 
-test('Windows installer bundles the Interception backend and pinned DLL together', () => {
-  const installer = read('../src-tauri/windows/installer.nsh');
-  assert.match(installer, /interception\.dll/i);
-  assert.match(installer, /interception\/install-interception\.exe/i);
+test('Windows bundle includes the Interception backend and pinned DLL together', () => {
+  const config = json('../src-tauri/tauri.windows.conf.json');
+  const sidecars = read('../scripts/prepare-kanata-sidecars.mjs');
+  assert.ok(config.bundle?.externalBin?.includes('binaries/kanata-engine-interception'));
+  assert.equal(config.bundle?.resources?.['binaries/interception.dll'], 'interception.dll');
+  assert.match(sidecars, /assets[',\s]+Interception\.zip/);
+  assert.match(sidecars, /copyPinnedInterceptionDll\(\)/);
 });
 
 test('first-run setup does not start Kanata before onboarding is complete', () => {
   const lib = read('../src-tauri/src/lib.rs');
-  assert.match(lib, /if\s+state\.settings\.read\(\)\.onboarding_completed/);
+  assert.match(lib, /if\s+settings\.remapping_enabled\s*&&\s*settings\.onboarding_completed\s*\{/);
 });
 
 test('Windows Studio release executable does not allocate its own console', () => {
@@ -125,8 +128,11 @@ test('Windows Studio release executable does not allocate its own console', () =
   assert.match(main, /cfg_attr\(not\(debug_assertions\), windows_subsystem = "windows"\)/);
 });
 
-test('engine event listener reuses the readiness TCP connection', () => {
-  const controller = read('../src-tauri/src/engine/controller.rs');
-  assert.match(controller, /spawn_event_listener\([^,]+,\s*stream\)/);
-  assert.ok(!controller.includes('TcpStream::connect(address)'), 'listener must not open a second TCP connection');
+test('engine event listener reuses the readiness TCP client', () => {
+  const supervisor = read('../src-tauri/src/engine/supervisor.rs');
+  const process = read('../src-tauri/src/engine/process.rs');
+  assert.match(supervisor, /client\.hello\(\)\?/);
+  assert.match(supervisor, /start_listener\(self,\s*id\.clone\(\),\s*client\)/);
+  assert.match(process, /mut client:\s*KanataTcpClient/);
+  assert.ok(!process.includes('KanataTcpClient::connect'), 'listener must consume the existing ready TCP client');
 });
