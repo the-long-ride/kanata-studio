@@ -41,6 +41,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: kanata-studio-windows-x64-c698a97
+          if-no-files-found: error
           path: |
-            studio/src-tauri/target/x86_64-pc-windows-msvc/release/*.exe
-            studio/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/**
+            target/x86_64-pc-windows-msvc/release/kanata-studio.exe
+            target/x86_64-pc-windows-msvc/release/bundle/**
