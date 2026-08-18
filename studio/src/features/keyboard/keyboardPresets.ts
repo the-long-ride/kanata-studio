@@ -1,10 +1,8 @@
+import type { KeyboardLayout, KeyboardVisualPreset } from '../../lib/types';
 import type { KeyGeometry } from './layouts/ansi';
 import { ansi } from './layouts/ansi';
 import { iso } from './layouts/iso';
 import { jis } from './layouts/jis';
-import type { KeyboardLayout } from '../../lib/types';
-
-export type KeyboardVisualPreset = 'fullsize' | 'tkl' | '75' | '65' | '60';
 
 export type KeyboardPreset = {
   id: KeyboardVisualPreset;
