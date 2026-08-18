@@ -1,9 +1,10 @@
 import type { ComponentType } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppShell } from './AppShell';
 
 const Shell = AppShell as unknown as ComponentType<Record<string, unknown>>;
+afterEach(cleanup);
 
 describe('AppShell', () => {
   it('uses Beginner and Advanced labels and preserves shell state', () => {
