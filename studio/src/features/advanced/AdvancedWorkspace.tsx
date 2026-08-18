@@ -75,7 +75,7 @@ export function AdvancedWorkspace({
             <pre>{preview}</pre>
           </div>) : workspaceMode === 'chords' ? (
             <ChordEditor
-              chordSets={profile.source.advanced.chordSets}
+              chordSets={profile.source.advanced.chordSets ?? []}
               layers={layers}
               onChange={onChordSetsChange}
               onSelect={(setIndex, chordIndex) => onSelectChord(setIndex, chordIndex)}
