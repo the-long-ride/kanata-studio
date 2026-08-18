@@ -24,6 +24,8 @@ pub struct UpdateConfiguredKeyboardInput {
     pub id: String,
     pub name: Option<String>,
     pub layout_override: Option<KeyboardLayout>,
+    #[serde(default)]
+    pub visual_preset_override: Option<String>,
 }
 
 #[tauri::command(async)]
@@ -70,7 +72,13 @@ pub fn update_configured_keyboard(
         }
         keyboard.name = name.into();
     }
+    if let Some(value) = input.visual_preset_override.as_deref() {
+        if !matches!(value, "fullsize" | "tkl" | "75" | "65" | "60") {
+            return Err("unknown keyboard visual preset".into());
+        }
+    }
     keyboard.layout_override = input.layout_override;
+    keyboard.visual_preset_override = input.visual_preset_override;
     let saved = keyboard.clone();
     state
         .keyboard_store
@@ -101,6 +109,7 @@ pub fn copy_keyboard_configuration(
         .position(|keyboard| keyboard.id == target_id)
         .ok_or("destination keyboard is not configured")?;
     keyboards[target_index].layout_override = source.layout_override.clone();
+    keyboards[target_index].visual_preset_override = source.visual_preset_override.clone();
     let target = keyboards[target_index].clone();
 
     let current = state.profiles.read().clone();
