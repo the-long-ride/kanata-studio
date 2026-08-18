@@ -11,6 +11,8 @@ pub struct ConfiguredKeyboard {
     pub vendor_id: Option<u16>,
     pub product_id: Option<u16>,
     pub layout_override: Option<KeyboardLayout>,
+    #[serde(default)]
+    pub visual_preset_override: Option<String>,
 }
 
 impl ConfiguredKeyboard {
@@ -22,6 +24,7 @@ impl ConfiguredKeyboard {
             vendor_id: device.vendor_id,
             product_id: device.product_id,
             layout_override: device.manual_layout.clone(),
+            visual_preset_override: None,
         }
     }
 
