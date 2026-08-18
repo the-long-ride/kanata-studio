@@ -1,5 +1,6 @@
 export type UiMode = 'Beginner' | 'Advanced';
 export type KeyboardLayout = 'Ansi' | 'Iso' | 'Jis' | 'Unknown';
+export type KeyboardVisualPreset = 'fullsize' | 'tkl' | '75' | '65' | '60';
 export type RuntimeHealth = 'Running' | 'Paused' | 'Recovering' | {
     RecoveryRequired: {
         message: string;
@@ -123,6 +124,7 @@ export type ConfiguredKeyboard = {
     vendorId?: number | null;
     productId?: number | null;
     layoutOverride?: KeyboardLayout | null;
+    visualPresetOverride?: KeyboardVisualPreset | null;
 };
 export type KeyboardConfigurationResult = {
     keyboard: ConfiguredKeyboard;
@@ -144,6 +146,8 @@ export type StudioSettings = {
     stopKanataOnQuit: boolean;
     deviceLayoutOverrides: Record<string, KeyboardLayout>;
     uiMode: UiMode;
+    leftRailWidth?: number;
+    rightPaneWidth?: number;
 };
 export type ValidationResult = {
     ok: boolean;
