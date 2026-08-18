@@ -1,7 +1,10 @@
+import type { ComponentType } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { KeyboardCanvas } from './KeyboardCanvas';
 import { keyboardEventCodeToKanataId } from './keyEventCode';
+
+const Canvas = KeyboardCanvas as unknown as ComponentType<Record<string, unknown>>;
 
 afterEach(cleanup);
 
@@ -53,6 +56,39 @@ describe('KeyboardCanvas', () => {
     expect(caps.classList.contains('pressed')).toBe(true);
     fireEvent.blur(window);
     expect(caps.classList.contains('pressed')).toBe(false);
+  });
+
+  it('uses the selected keyboard visual preset instead of generic ANSI geometry', () => {
+    render(
+      <Canvas
+        layout="Ansi"
+        visualPreset="tkl"
+        onSelect={() => undefined}
+        direct={{}}
+        inherited={{}}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Num 1' })).toBeNull();
+  });
+
+  it('shows Fn legends and blocks a hardware-controlled Fn key', () => {
+    const onSelect = vi.fn();
+    render(
+      <Canvas
+        layout="Ansi"
+        visualPreset="75"
+        onSelect={onSelect}
+        direct={{}}
+        inherited={{}}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Fn layer' }));
+    expect(screen.getByText('Mute')).toBeTruthy();
+    const fn = screen.getByRole('button', { name: /Fn/ });
+    expect(fn.getAttribute('aria-disabled')).toBe('true');
+    fireEvent.click(fn);
+    expect(onSelect).not.toHaveBeenCalledWith('fn');
   });
 });
 
