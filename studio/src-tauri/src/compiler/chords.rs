@@ -61,9 +61,9 @@ fn resolve_effective(
         if set.name.trim().is_empty() {
             return Err(invalid("chord set name cannot be blank"));
         }
-        if set.timeout_ms == 0 {
+        if set.timeout_ms == 0 || set.timeout_ms > u16::MAX.into() {
             return Err(invalid(format!(
-                "chord set {} must use a positive timeout",
+                "chord set {} timeout must be 1-65535 ms",
                 set.name
             )));
         }
@@ -109,7 +109,12 @@ fn action_for_layers(
         .next()
         .ok_or_else(|| invalid("chord has no active layers"))?;
     if bindings.values().all(|item| item.action == first.action) {
-        return compile_action(&format!("chord-{}", keys.join("-")), &first.action, platform, external);
+        return compile_action(
+            &format!("chord-{}", keys.join("-")),
+            &first.action,
+            platform,
+            external,
+        );
     }
 
     let mut branches = Vec::new();
