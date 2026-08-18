@@ -1,8 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
-import { expect, it } from 'vitest';
+import { afterEach, expect, it } from 'vitest';
 import type { ChordSet } from '../../lib/types';
 import { ChordEditor } from './ChordEditor';
+
+afterEach(cleanup);
 
 function Harness({ initial = [] }: { initial?: ChordSet[] }) {
   const [sets, setSets] = useState(initial);
