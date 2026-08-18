@@ -38,8 +38,22 @@ it('records physical keys for a new chord', () => {
   fireEvent.click(screen.getByRole('button', { name: 'Add chord' }));
   fireEvent.keyDown(window, { code: 'KeyJ' });
   fireEvent.keyDown(window, { code: 'KeyK' });
+  expect(screen.getByText('Recording… J + K')).toBeInTheDocument();
+  fireEvent.keyUp(window, { code: 'KeyJ' });
   expect(screen.getByText('J + K')).toBeInTheDocument();
   expect(screen.getByTestId('state')).toHaveTextContent('"keys":["j","k"]');
+});
+
+it('keeps recording long enough for a three-key chord', () => {
+  render(<Harness initial={[setWithChords([])]} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Add chord' }));
+  fireEvent.keyDown(window, { code: 'KeyJ' });
+  fireEvent.keyDown(window, { code: 'KeyK' });
+  fireEvent.keyDown(window, { code: 'KeyL' });
+  expect(screen.getByText('Recording… J + K + L')).toBeInTheDocument();
+  fireEvent.keyUp(window, { code: 'KeyJ' });
+  expect(screen.getByText('J + K + L')).toBeInTheDocument();
+  expect(screen.getByTestId('state')).toHaveTextContent('"keys":["j","k","l"]');
 });
 
 it('edits layer scope without losing the all-layer default', () => {
