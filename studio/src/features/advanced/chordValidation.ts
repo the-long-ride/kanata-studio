@@ -1,5 +1,7 @@
 import type { ChordSet } from '../../lib/types';
 
+export const MAX_CHORD_TIMEOUT_MS = 65_535;
+
 export function canonicalChordKeys(keys: string[]) {
   return [...keys].sort().join('+');
 }
@@ -32,8 +34,9 @@ export function chordSetsValid(sets: ChordSet[], availableLayers: string[]) {
   const knownLayers = new Set(availableLayers);
   if (chordConflictIds(sets).size > 0) return false;
   return sets.every((set) => set.name.trim().length > 0
-    && Number.isFinite(set.timeoutMs)
+    && Number.isInteger(set.timeoutMs)
     && set.timeoutMs > 0
+    && set.timeoutMs <= MAX_CHORD_TIMEOUT_MS
     && set.layers.every((layer) => knownLayers.has(layer))
     && set.chords.every((chord) => chord.keys.length >= 2
       && new Set(chord.keys).size === chord.keys.length));
