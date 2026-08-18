@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { StudioProfile } from '../lib/types';
+import * as helpers from './profileHelpers';
 import { makeAppProfile, setChordAction, setChordSets } from './profileHelpers';
 
 function profile(): StudioProfile {
@@ -10,7 +11,7 @@ function profile(): StudioProfile {
       kind: 'visual',
       mappings: { j: { type: 'key', key: 'j' }, k: { type: 'key', key: 'k' } },
       advanced: {
-        layers: [],
+        layers: [{ name: 'nav', mappings: { h: { type: 'key', key: 'left' } } }],
         chordSets: [{
           name: 'Editing', timeoutMs: 50, layers: [],
           chords: [{ keys: ['j', 'k'], action: { type: 'key', key: 'esc' } }],
@@ -39,11 +40,21 @@ describe('chord profile helpers', () => {
 
   it('replaces chord sets while preserving layers', () => {
     const initial = profile();
-    if (initial.source.kind !== 'visual') throw new Error('expected visual profile');
-    initial.source.advanced.layers = [{ name: 'nav', mappings: {} }];
     const updated = setChordSets(initial, []);
     if (updated.source.kind !== 'visual') throw new Error('expected visual profile');
     expect(updated.source.advanced.layers).toHaveLength(1);
     expect(updated.source.advanced.chordSets).toEqual([]);
+  });
+
+  it('clears direct base and named-layer mappings instead of writing identity mappings', () => {
+    const clearLayerMapping = (helpers as unknown as Record<string, unknown>).clearLayerMapping;
+    expect(typeof clearLayerMapping).toBe('function');
+    if (typeof clearLayerMapping !== 'function') return;
+
+    const baseCleared = (clearLayerMapping as (p: StudioProfile, l: string, k: string) => StudioProfile)(profile(), 'base', 'j');
+    const navCleared = (clearLayerMapping as (p: StudioProfile, l: string, k: string) => StudioProfile)(profile(), 'nav', 'h');
+    if (baseCleared.source.kind !== 'visual' || navCleared.source.kind !== 'visual') throw new Error('expected visual');
+    expect(baseCleared.source.mappings.j).toBeUndefined();
+    expect(navCleared.source.advanced.layers[0].mappings.h).toBeUndefined();
   });
 });
