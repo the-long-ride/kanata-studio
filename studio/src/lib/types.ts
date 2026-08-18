@@ -71,11 +71,22 @@ export type AdvancedActionSpec = {
     type: 'layerSwitch';
     layer: string;
 };
+export type ChordEntry = {
+    keys: string[];
+    action: ActionSpec;
+};
+export type ChordSet = {
+    name: string;
+    timeoutMs: number;
+    layers: string[];
+    chords: ChordEntry[];
+};
 export type AdvancedVisualConfig = {
     layers: Array<{
         name: string;
         mappings: Record<string, ActionSpec>;
     }>;
+    chordSets: ChordSet[];
 };
 export type ProfileSource = {
     kind: 'visual';
