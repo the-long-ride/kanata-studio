@@ -53,6 +53,7 @@ export function KeyboardCanvas({ layout, visualPreset, selected, onSelect, direc
       <button type="button" className={layerView === 'base' ? 'active' : ''} onClick={() => setLayerView('base')}>Base layer</button>
       <button type="button" className={layerView === 'fn' ? 'active' : ''} onClick={() => setLayerView('fn')}>Fn layer</button>
       <span>{preset.label}</span>
+      {preset.fnKey && !preset.fnKey.remappable && <span className="fn-hardware-status">Fn · Hardware-controlled</span>}
     </div>
     <div className="keyboard-board" style={{ width: bounds.width, height: bounds.height }}>
       {preset.keys.map(key => {
