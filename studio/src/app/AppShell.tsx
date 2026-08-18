@@ -59,12 +59,18 @@ export function AppShell({
 
   return <div className="app-shell">
     <header className="topbar">
-      <button className="brand-drag" type="button" aria-label="Drag window" onMouseDown={() => void startWindowDrag()}>
+      <button
+        className="brand-drag"
+        type="button"
+        aria-label="Drag window"
+        onMouseDown={() => void startWindowDrag()}
+        onDoubleClick={() => void toggleMaximizeWindow()}
+      >
         <span className="brand-logo" aria-hidden="true" /><span className="brand">Kanata Studio</span>
       </button>
       {keyboardControl}
       <ModeSwitch value={mode} onChange={onMode} />
-      <div className="topbar-spacer" data-tauri-drag-region />
+      <div className="topbar-spacer" data-tauri-drag-region onDoubleClick={() => void toggleMaximizeWindow()} />
       {onUndo && <IconButton label="Undo last mapping" onClick={onUndo}><Undo2 size={15} /></IconButton>}
       {onRestart && <IconButton label="Restart Kanata engine" onClick={onRestart}><RotateCcw size={15} /></IconButton>}
       {onSettings && <IconButton label="Settings" onClick={onSettings}><Settings2 size={15} /></IconButton>}
