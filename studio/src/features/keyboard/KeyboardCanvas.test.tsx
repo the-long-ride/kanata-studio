@@ -72,6 +72,14 @@ describe('KeyboardCanvas', () => {
     expect(screen.queryByRole('button', { name: 'Num 1' })).toBeNull();
   });
 
+  it('does not invent an Fn media layer for an unknown generic keyboard', () => {
+    render(
+      <KeyboardCanvas layout="Iso" onSelect={() => undefined} direct={{}} inherited={{}} />,
+    );
+    expect(screen.queryByRole('button', { name: 'Fn layer' })).toBeNull();
+    expect(screen.queryByText('Mute')).toBeNull();
+  });
+
   it('shows Fn legends and blocks a hardware-controlled Fn key', () => {
     const onSelect = vi.fn();
     render(
