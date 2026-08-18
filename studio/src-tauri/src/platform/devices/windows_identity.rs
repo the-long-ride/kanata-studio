@@ -26,7 +26,10 @@ impl Drop for DeviceInfoSet {
 }
 
 pub(crate) fn container_id_for_interface(path: &str) -> Result<Option<String>, PlatformError> {
-    let wide = path.encode_utf16().chain(std::iter::once(0)).collect::<Vec<_>>();
+    let wide = path
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect::<Vec<_>>();
     unsafe {
         let set = SetupDiCreateDeviceInfoList(ptr::null(), 0);
         if set == INVALID_HANDLE_VALUE {
@@ -113,14 +116,7 @@ fn format_guid_bytes(bytes: [u8; 16]) -> String {
     let data3 = u16::from_le_bytes(bytes[6..8].try_into().expect("two bytes"));
     format!(
         "{data1:08x}-{data2:04x}-{data3:04x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
-        bytes[8],
-        bytes[9],
-        bytes[10],
-        bytes[11],
-        bytes[12],
-        bytes[13],
-        bytes[14],
-        bytes[15],
+        bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15],
     )
 }
 
@@ -139,8 +135,8 @@ mod tests {
     #[test]
     fn guid_property_bytes_format_canonically() {
         let bytes = [
-            0x01, 0xef, 0xcd, 0xab, 0x45, 0x23, 0x89, 0x67, 0xab, 0xcd, 0xef, 0x01, 0x23,
-            0x45, 0x67, 0x89,
+            0x01, 0xef, 0xcd, 0xab, 0x45, 0x23, 0x89, 0x67, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45,
+            0x67, 0x89,
         ];
         assert_eq!(
             format_guid_bytes(bytes),

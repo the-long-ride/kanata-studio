@@ -176,6 +176,7 @@ jobs:
           printf '' > "studio/src-tauri/binaries/kanata-engine-${{ matrix.target }}${suffix}"
           if [[ "${{ matrix.target }}" == *windows* ]]; then
             printf '' > "studio/src-tauri/binaries/kanata-engine-interception-${{ matrix.target }}.exe"
+            printf '' > "studio/src-tauri/binaries/interception.dll"
           fi
 
       - name: Run Tauri/native tests

@@ -3,14 +3,8 @@ use tauri_plugin_autostart::ManagerExt;
 
 use crate::{
     app_state::AppState,
-    engine::{
-        EngineId, EngineSupervisor, RuntimeHealth,
-        shutdown::prepare_true_quit,
-    },
-    runtime::{
-        diagnostics::append_runtime_diagnostic,
-        pause_all, resume_all,
-    },
+    engine::{EngineId, EngineSupervisor, RuntimeHealth, shutdown::prepare_true_quit},
+    runtime::{diagnostics::append_runtime_diagnostic, pause_all, resume_all},
 };
 
 pub fn show_main(app: &AppHandle) {
@@ -36,10 +30,7 @@ fn quit(app: &AppHandle) {
     let state = app.state::<AppState>();
     let stop_on_quit = state.settings.read().stop_kanata_on_quit;
     for error in prepare_true_quit(state.supervisor.as_ref(), stop_on_quit) {
-        let _ = append_runtime_diagnostic(
-            &state.paths.logs(),
-            &format!("shutdown-error {error}"),
-        );
+        let _ = append_runtime_diagnostic(&state.paths.logs(), &format!("shutdown-error {error}"));
     }
     app.exit(0);
 }

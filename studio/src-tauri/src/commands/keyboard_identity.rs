@@ -66,7 +66,8 @@ pub fn reconcile_keyboard_identities(
                 KeyboardIdentityMigrationReason::LegacyInterfacePath,
             )),
             0 => {
-                let (Some(vendor_id), Some(product_id)) = (saved.vendor_id, saved.product_id) else {
+                let (Some(vendor_id), Some(product_id)) = (saved.vendor_id, saved.product_id)
+                else {
                     continue;
                 };
                 let candidates = detected
@@ -78,10 +79,7 @@ pub fn reconcile_keyboard_identities(
                     })
                     .collect::<Vec<_>>();
                 if candidates.len() == 1 {
-                    Some((
-                        candidates[0],
-                        KeyboardIdentityMigrationReason::UniqueVidPid,
-                    ))
+                    Some((candidates[0], KeyboardIdentityMigrationReason::UniqueVidPid))
                 } else {
                     None
                 }

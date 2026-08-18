@@ -6,10 +6,7 @@ pub trait QuitEngineController {
     fn detach_all(&self);
 }
 
-pub fn prepare_true_quit(
-    controller: &dyn QuitEngineController,
-    stop_on_quit: bool,
-) -> Vec<String> {
+pub fn prepare_true_quit(controller: &dyn QuitEngineController, stop_on_quit: bool) -> Vec<String> {
     if !stop_on_quit {
         controller.detach_all();
         return Vec::new();

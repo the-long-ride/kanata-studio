@@ -94,7 +94,8 @@ pub fn log_pending_identity_migrations(state: &AppState) {
         return;
     }
     let all_logged = migrations.iter().all(|migration| {
-        append_runtime_diagnostic(&state.paths.logs(), &format_identity_migration(migration)).is_ok()
+        append_runtime_diagnostic(&state.paths.logs(), &format_identity_migration(migration))
+            .is_ok()
     });
     if all_logged {
         state.identity_migrations.write().clear();

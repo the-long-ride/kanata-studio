@@ -96,7 +96,7 @@ fn keyboard_device_without_interface_paths_deserializes_for_backcompat() {
       "vendorId":1,
       "productId":2,
       "path":"legacy-path",
-      "layout":"Ansi",
+      "layout":"ansi",
       "manualLayout":null
     }"#;
     let device: kanata_studio::domain::KeyboardDevice = serde_json::from_str(json).unwrap();

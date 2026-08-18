@@ -84,7 +84,7 @@ test('Windows Studio sidecars are headless without enabling Kanata legacy GUI', 
   assert.ok(!sidecars.includes("'gui'"), 'Studio sidecar build must not select Kanata legacy GUI entry point');
 });
 
-test('Windows installer bundles the Interception backend and DLL together', () => {
+test('Windows installer bundles the Interception backend and pinned DLL together', () => {
   const config = json('../src-tauri/tauri.windows.conf.json');
   const external = config.bundle?.externalBin ?? [];
   assert.ok(external.includes('binaries/kanata-engine'));
@@ -96,6 +96,9 @@ test('Windows installer bundles the Interception backend and DLL together', () =
   );
 
   const sidecars = read('../scripts/prepare-kanata-sidecars.mjs');
+  assert.match(sidecars, /assets.*Interception\.zip/s);
+  assert.match(sidecars, /Expand-Archive/);
+  assert.match(sidecars, /'Interception',[\s\S]*'library',[\s\S]*'x64',[\s\S]*'interception\.dll'/);
   assert.match(sidecars, /resolve\(outputDir, 'interception\.dll'\)/);
 });
 

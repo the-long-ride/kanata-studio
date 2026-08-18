@@ -56,9 +56,7 @@ pub fn defcfg_for_scope(platform: Platform, scope: &EngineDeviceScope) -> String
                 .collect::<Vec<_>>()
                 .join(" ");
             if !values.is_empty() {
-                lines.push(format!(
-                    "  windows-interception-keyboard-hwids ({values})"
-                ));
+                lines.push(format!("  windows-interception-keyboard-hwids ({values})"));
             }
         }
         (Platform::Windows, EngineDeviceScope::ExcludeDevices(devices)) => {

@@ -1,9 +1,7 @@
 use std::collections::BTreeMap;
 
 use kanata_studio::{
-    commands::keyboard_identity::{
-        KeyboardIdentityMigrationReason, reconcile_keyboard_identities,
-    },
+    commands::keyboard_identity::{KeyboardIdentityMigrationReason, reconcile_keyboard_identities},
     domain::{
         ActionSpec, ConfiguredKeyboard, DeviceTarget, KeyboardDevice, KeyboardLayout,
         ProfileSource, ResolutionContext, UiMode, device_global_profile, global_profile,
@@ -62,10 +60,7 @@ fn legacy_path_hash_matching_member_interface_migrates_to_container_id() {
         Some(0x5678),
     );
     current.path = Some(path.into());
-    current.interface_paths = vec![
-        path.into(),
-        r"\\?\HID#VID_1234&PID_5678&MI_00#OTHER".into(),
-    ];
+    current.interface_paths = vec![path.into(), r"\\?\HID#VID_1234&PID_5678&MI_00#OTHER".into()];
 
     let result = reconcile_keyboard_identities(
         &[configured(&old, Some(0x1234), Some(0x5678))],
