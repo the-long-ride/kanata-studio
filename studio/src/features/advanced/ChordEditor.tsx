@@ -54,10 +54,21 @@ export function ChordEditor({ chordSets, layers, onChange, onSelect }: Props) {
       const next = [...chordSets];
       next[recording.setIndex] = { ...targetSet, chords };
       onChange(next);
-      if (keys.length >= 2) setRecording(undefined);
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      const key = keyboardEventCodeToKanataId(event.code);
+      const current = chordSets[recording.setIndex]?.chords[recording.chordIndex];
+      if (key && current?.keys.includes(key) && current.keys.length >= 2) {
+        event.preventDefault();
+        setRecording(undefined);
+      }
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
   }, [chordSets, onChange, recording]);
 
   const addSet = () => {
