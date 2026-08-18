@@ -2,18 +2,6 @@ name: GUI Windows Test Build
 
 on:
   workflow_dispatch:
-  push:
-    branches: [feat/add-GUI]
-    paths:
-      - 'studio/**'
-      - 'src/**'
-      - 'parser/**'
-      - 'tcp_protocol/**'
-      - 'keyberon/**'
-      - 'interception/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - '.github/workflows/kanata-gui-windows-test.yml'
 
 permissions:
   contents: read
