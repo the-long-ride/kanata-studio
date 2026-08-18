@@ -1,5 +1,5 @@
 import { Minus, RotateCcw, Settings2, Square, Undo2, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import type { UiMode } from '../lib/types';
 import { IconButton } from '../components/IconButton';
 import { StatusDot } from '../components/StatusDot';
@@ -9,6 +9,8 @@ import { closeWindow, minimizeWindow, startWindowDrag, toggleMaximizeWindow } fr
 const DEFAULT_LEFT = 260;
 const DEFAULT_RIGHT = 340;
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+
+type DragState = { side: 'left' | 'right'; x: number; left: number; right: number };
 
 export function AppShell({
   mode, onMode, keyboardControl, rail, main, inspector,
@@ -29,7 +31,7 @@ export function AppShell({
   rightPaneWidth?: number;
   onPaneWidthsChange?: (left: number, right: number) => void;
 }) {
-  const drag = useRef<{ side: 'left' | 'right'; x: number; left: number; right: number }>();
+  const drag = useRef<DragState | undefined>(undefined);
   const onPointerMove = useCallback((event: PointerEvent) => {
     if (!drag.current || !onPaneWidthsChange) return;
     const delta = event.clientX - drag.current.x;
@@ -50,7 +52,7 @@ export function AppShell({
     };
   }, [onPointerMove, stopDrag]);
 
-  const startResize = (side: 'left' | 'right', event: React.PointerEvent) => {
+  const startResize = (side: 'left' | 'right', event: ReactPointerEvent) => {
     drag.current = { side, x: event.clientX, left: leftRailWidth, right: rightPaneWidth };
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
@@ -78,7 +80,7 @@ export function AppShell({
       style={{
         '--left-rail-width': `${clamp(leftRailWidth, 180, 420)}px`,
         '--right-pane-width': `${clamp(rightPaneWidth, 260, 520)}px`,
-      } as React.CSSProperties}
+      } as CSSProperties}
     >
       <aside className="rail">{rail}</aside>
       <div
