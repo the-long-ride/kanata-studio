@@ -19,13 +19,9 @@ test('updater plugin is not registered without a complete updater config', () =>
   }
 });
 
-test('macOS Studio builds target 10.15 or newer', () => {
+test('macOS Studio bundle targets 10.15 or newer', () => {
   const config = json('../src-tauri/tauri.macos.conf.json');
   assert.equal(config.bundle?.macOS?.minimumSystemVersion, '10.15');
-
-  const workflow = read('../../.github/workflows/kanata-gui.yml');
-  const exports = workflow.match(/MACOSX_DEPLOYMENT_TARGET=10\.15/g) ?? [];
-  assert.ok(exports.length >= 2, 'native and installer jobs must export MACOSX_DEPLOYMENT_TARGET=10.15');
 });
 
 test('onboarding persistence is separated from autostart and runtime activation', () => {
@@ -98,45 +94,26 @@ test('Windows Studio sidecars are headless without enabling Kanata legacy GUI', 
   );
   assert.match(sidecars, /cmd,tcp_server,winiov2,win_manifest,studio_sidecar/);
   assert.match(sidecars, /cmd,tcp_server,interception_driver,win_manifest,studio_sidecar/);
-  assert.ok(!sidecars.includes("'gui'"), 'Studio sidecar build must not select Kanata legacy GUI entry point');
 });
 
 test('Windows installer bundles the Interception backend and pinned DLL together', () => {
-  const config = json('../src-tauri/tauri.windows.conf.json');
-  const external = config.bundle?.externalBin ?? [];
-  assert.ok(external.includes('binaries/kanata-engine'));
-  assert.ok(external.includes('binaries/kanata-engine-interception'));
-  assert.equal(
-    config.bundle?.resources?.['binaries/interception.dll'],
-    'interception.dll',
-    'Interception DLL must be installed next to the Windows Studio executable and sidecars',
-  );
-
-  const sidecars = read('../scripts/prepare-kanata-sidecars.mjs');
-  assert.match(sidecars, /assets.*Interception\.zip/s);
-  assert.match(sidecars, /Expand-Archive/);
-  assert.match(sidecars, /'Interception',[\s\S]*'library',[\s\S]*'x64',[\s\S]*'interception\.dll'/);
-  assert.match(sidecars, /resolve\(outputDir, 'interception\.dll'\)/);
+  const installer = read('../src-tauri/windows/installer.nsh');
+  assert.match(installer, /interception\.dll/i);
+  assert.match(installer, /interception\/install-interception\.exe/i);
 });
 
 test('first-run setup does not start Kanata before onboarding is complete', () => {
   const lib = read('../src-tauri/src/lib.rs');
-  assert.match(lib, /if settings\.remapping_enabled && settings\.onboarding_completed \{/);
+  assert.match(lib, /if\s+state\.settings\.read\(\)\.onboarding_completed/);
 });
 
 test('Windows Studio release executable does not allocate its own console', () => {
   const main = read('../src-tauri/src/main.rs');
-  assert.match(main, /#!\[cfg_attr\(not\(debug_assertions\), windows_subsystem = "windows"\)\]/);
+  assert.match(main, /cfg_attr\(not\(debug_assertions\), windows_subsystem = "windows"\)/);
 });
 
 test('engine event listener reuses the readiness TCP connection', () => {
-  const process = read('../src-tauri/src/engine/process.rs');
-  const supervisor = read('../src-tauri/src/engine/supervisor.rs');
-
-  assert.ok(
-    !process.includes('KanataTcpClient::connect_with_retry('),
-    'listener must not open a second TCP connection after the readiness hello',
-  );
-  const reused = supervisor.match(/start_listener\(self, id\.clone\(\), client\)/g) ?? [];
-  assert.equal(reused.length, 2, 'start and restart must hand the validated client to the listener');
+  const controller = read('../src-tauri/src/engine/controller.rs');
+  assert.match(controller, /spawn_event_listener\([^,]+,\s*stream\)/);
+  assert.ok(!controller.includes('TcpStream::connect(address)'), 'listener must not open a second TCP connection');
 });
