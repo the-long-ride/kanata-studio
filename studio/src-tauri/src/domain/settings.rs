@@ -52,3 +52,24 @@ impl Default for StudioSettings {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::StudioSettings;
+
+    #[test]
+    fn legacy_settings_use_default_pane_widths() {
+        let settings: StudioSettings = serde_json::from_value(serde_json::json!({
+            "onboardingCompleted": true,
+            "startWithSystem": true,
+            "remappingEnabled": true,
+            "stopKanataOnQuit": true,
+            "deviceLayoutOverrides": {},
+            "uiMode": "Beginner"
+        }))
+        .expect("legacy settings should deserialize");
+
+        assert_eq!(settings.left_rail_width, 260);
+        assert_eq!(settings.right_pane_width, 340);
+    }
+}
