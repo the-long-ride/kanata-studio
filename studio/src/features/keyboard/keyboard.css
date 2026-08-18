@@ -1,14 +1,46 @@
 .keyboard-wrap {
   min-width: 760px;
-  padding: 34px;
+  padding: 24px 34px 34px;
   display: grid;
-  place-items: start center;
+  justify-items: center;
+  align-content: start;
+  gap: 12px;
+}
+
+.keyboard-view-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.keyboard-view-toolbar button {
+  height: 27px;
+  border: 0;
+  border-radius: 4px;
+  padding: 0 9px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.keyboard-view-toolbar button.active {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.keyboard-view-toolbar > span {
+  padding: 0 7px;
+  color: var(--muted);
+  font-size: 10px;
 }
 
 .keyboard-board {
   position: relative;
-  width: 760px;
-  height: 330px;
+  min-width: 760px;
+  min-height: 300px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
@@ -45,6 +77,12 @@
   border-color: #fff;
 }
 
+.keyboard-key.hardware-controlled {
+  cursor: not-allowed;
+  color: #777;
+  border-style: dashed;
+}
+
 .keyboard-key.overridden:after {
   content: "";
   position: absolute;
@@ -54,6 +92,23 @@
   height: 4px;
   border-radius: 50%;
   background: #fff;
+}
+
+.key-main-label {
+  pointer-events: none;
+}
+
+.fn-legend {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  max-width: calc(100% - 8px);
+  overflow: hidden;
+  color: #777;
+  font-size: 7px;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .inherit-mark {
