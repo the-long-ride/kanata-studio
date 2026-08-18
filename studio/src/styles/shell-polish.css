@@ -1,0 +1,117 @@
+.workspace {
+  grid-template-columns: var(--left-rail-width, 260px) 5px minmax(0, 1fr) 5px var(--right-pane-width, 340px);
+}
+
+.pane-splitter {
+  position: relative;
+  z-index: 4;
+  cursor: col-resize;
+  background: transparent;
+}
+
+.pane-splitter::after {
+  content: "";
+  position: absolute;
+  inset: 0 2px;
+  background: var(--line);
+  opacity: .55;
+}
+
+.pane-splitter:hover::after {
+  opacity: 1;
+}
+
+.topbar {
+  padding-left: 8px;
+  padding-right: 0;
+  user-select: none;
+}
+
+.brand-drag {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 132px;
+  border: 0;
+  padding: 0 6px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.brand-logo {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  background: var(--text);
+  color: #111;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.window-controls {
+  height: 100%;
+  display: flex;
+  margin-left: 2px;
+}
+
+.window-controls button {
+  width: 46px;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--text);
+}
+
+.window-controls button:hover {
+  background: #ffffff12;
+}
+
+.window-controls .window-close:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #000a;
+  backdrop-filter: blur(2px);
+}
+
+.dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 48px));
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 18px;
+  background: var(--surface);
+  box-shadow: 0 24px 80px #000c;
+}
+
+.dialog > h3 {
+  margin: 0 0 8px;
+}
+
+.dialog form,
+.dialog-form {
+  display: grid;
+  gap: 12px;
+}
+
+@media (max-width: 860px) {
+  .brand-drag { min-width: auto; }
+  .brand-drag .brand { display: none; }
+  .window-controls button { width: 40px; }
+}
