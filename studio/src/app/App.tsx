@@ -96,7 +96,7 @@ export function App() {
   const direct = useMemo(() => layerMappings(profile, activeLayer), [profile, activeLayer]);
   const inherited = useMemo(() => layerMappings(inheritedFrom, activeLayer), [inheritedFrom, activeLayer]);
   const selectedChordEntry = selectedChord && profile?.source.kind === 'visual'
-    ? profile.source.advanced.chordSets[selectedChord.setIndex]?.chords[selectedChord.chordIndex]
+    ? profile.source.advanced.chordSets?.[selectedChord.setIndex]?.chords[selectedChord.chordIndex]
     : undefined;
   const currentAction = selectedChordEntry?.action ?? (selectedKey ? direct[selectedKey] ?? inherited[selectedKey] : undefined);
   const selectedTarget = selectedChordEntry ? chordLabel(selectedChordEntry.keys) : selectedKey;
