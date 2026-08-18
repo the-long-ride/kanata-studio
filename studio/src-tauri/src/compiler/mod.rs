@@ -137,6 +137,7 @@ mod tests {
             contributing_profile_ids: Vec::new(),
             mappings,
             layers: Vec::new(),
+            chord_sets: Vec::new(),
             raw_kbd: None,
         }
     }
