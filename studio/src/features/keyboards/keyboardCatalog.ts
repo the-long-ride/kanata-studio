@@ -2,6 +2,8 @@ import type {
   ConfiguredKeyboard,
   DeviceTarget,
   KeyboardDevice,
+  KeyboardLayout,
+  KeyboardVisualPreset,
 } from '../../lib/types';
 
 export type KeyboardCatalogItem = {
@@ -12,9 +14,25 @@ export type KeyboardCatalogItem = {
   connected: boolean;
   layout: KeyboardDevice['layout'];
   layoutOverride?: KeyboardDevice['manualLayout'];
+  visualPreset: KeyboardVisualPreset;
+  visualPresetOverride?: KeyboardVisualPreset | null;
   vendorId?: number | null;
   productId?: number | null;
 };
+
+export function resolveVisualPreset(input: {
+  override?: KeyboardVisualPreset | null;
+  name: string;
+  layout: KeyboardLayout | string;
+}): KeyboardVisualPreset {
+  if (input.override) return input.override;
+  const name = input.name.toLowerCase();
+  if (/\b(tkl|tenkeyless)\b|keychron\s*k8\b/.test(name)) return 'tkl';
+  if (/\b75\b|air\s*75|air75|keychron\s*k2\b|keychron\s*q1\b/.test(name)) return '75';
+  if (/\b65\b|keychron\s*k6\b|keychron\s*q2\b/.test(name)) return '65';
+  if (/\b60\b|poker|anne\s*pro/.test(name)) return '60';
+  return 'fullsize';
+}
 
 export function buildKeyboardCatalog(
   configured: ConfiguredKeyboard[],
@@ -24,14 +42,22 @@ export function buildKeyboardCatalog(
   const saved = configured.map(keyboard => {
     const device = detectedById.get(keyboard.id);
     detectedById.delete(keyboard.id);
+    const layout = device?.layout ?? keyboard.layoutOverride ?? 'Unknown';
+    const detectedName = device?.name ?? keyboard.detectedName;
     return {
       id: keyboard.id,
       name: keyboard.name,
-      detectedName: device?.name ?? keyboard.detectedName,
+      detectedName,
       configured: true,
       connected: Boolean(device),
-      layout: device?.layout ?? keyboard.layoutOverride ?? 'Unknown',
+      layout,
       layoutOverride: keyboard.layoutOverride ?? device?.manualLayout ?? null,
+      visualPresetOverride: keyboard.visualPresetOverride ?? null,
+      visualPreset: resolveVisualPreset({
+        override: keyboard.visualPresetOverride,
+        name: detectedName,
+        layout,
+      }),
       vendorId: device?.vendorId ?? keyboard.vendorId,
       productId: device?.productId ?? keyboard.productId,
     } satisfies KeyboardCatalogItem;
@@ -44,6 +70,8 @@ export function buildKeyboardCatalog(
     connected: true,
     layout: device.layout,
     layoutOverride: device.manualLayout,
+    visualPresetOverride: null,
+    visualPreset: resolveVisualPreset({ name: device.name, layout: device.layout }),
     vendorId: device.vendorId,
     productId: device.productId,
   } satisfies KeyboardCatalogItem));
@@ -52,7 +80,6 @@ export function buildKeyboardCatalog(
     ...fresh.sort((a, b) => a.name.localeCompare(b.name)),
   ];
 }
-
 
 export function initialKeyboardId(
   configured: ConfiguredKeyboard[],
