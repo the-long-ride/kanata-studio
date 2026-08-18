@@ -17,8 +17,6 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: pnpm
-          cache-dependency-path: studio/pnpm-lock.yaml
       - run: pnpm install --no-frozen-lockfile
         working-directory: studio
       - run: pnpm test
