@@ -5,4 +5,5 @@ import './styles/tokens.css';
 import './styles/global.css';
 import './styles/shell.css';
 import './styles/chords.css';
+import './styles/shell-polish.css';
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);
