@@ -7,6 +7,7 @@ use crate::{
     domain::{CapabilitySet, ConfiguredKeyboard, KeyboardDevice, StudioProfile, StudioSettings},
     engine::{EngineStatus, LocalSupervisor, RuntimeHealth},
     platform::active_app::ActiveApp,
+    runtime::RuntimeApplyGate,
     storage::{JsonKeyboardStore, JsonProfileStore, RecoveryStore, SettingsStore, StudioPaths},
 };
 
@@ -28,6 +29,7 @@ pub struct AppState {
     pub topology_signature: RwLock<Option<String>>,
     pub last_runtime_error: RwLock<Option<String>>,
     pub identity_migrations: RwLock<Vec<KeyboardIdentityMigration>>,
+    pub runtime_apply_gate: RuntimeApplyGate,
 }
 
 impl AppState {
