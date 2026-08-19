@@ -1,0 +1,53 @@
+name: Cleanup redundant branches
+
+on:
+  push:
+    branches:
+      - feat/add-GUI
+    paths:
+      - .github/workflows/cleanup-redundant-branches.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete redundant refs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branches = [
+              'feat/add-GUI-spec-physical-id',
+              'feat/add-GUI-spec-temp',
+              'feat/chord-sets',
+              'feat/sidebar-viewport-polish',
+              'feat/studio-shell-keyboard-polish',
+              'fix/gui-ci',
+              'noop2',
+              'noop-physical-id-spec-temp',
+              'spec-holder',
+              'temporary-spec-review',
+              'tmp/modal-keyboard-verify-base',
+              'tmp/sidebar-viewport-verify-base',
+              'tmp/studio-shell-verify-base',
+              'tmp/windows-artifact',
+              'tmp/windows-artifact-2',
+              'tmp/windows-build-trigger'
+            ];
+            for (const branch of branches) {
+              try {
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `heads/${branch}`,
+                });
+                core.info(`Deleted ${branch}`);
+              } catch (error) {
+                if (error.status === 422 || error.status === 404) {
+                  core.warning(`Skipped ${branch}: ${error.message}`);
+                  continue;
+                }
+                throw error;
+              }
