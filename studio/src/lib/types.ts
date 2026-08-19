@@ -115,6 +115,9 @@ export type KeyboardDevice = {
     interfacePaths?: string[];
     layout: KeyboardLayout;
     manualLayout?: KeyboardLayout | null;
+    reportedKeyCount?: number | null;
+    functionKeyCount?: number | null;
+    keyboardType?: number | null;
 };
 
 export type ConfiguredKeyboard = {
