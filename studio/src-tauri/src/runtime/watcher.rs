@@ -52,6 +52,8 @@ fn start_device_watcher(app: AppHandle) {
             };
             let overrides = state.settings.read().device_layout_overrides.clone();
             let configured = state.configured_keyboards.read().clone();
+            // Keep watcher normalization identical to startup and list_keyboards. Otherwise
+            // configured layout overrides disappear every poll and the same device looks changed.
             apply_saved_layouts(&mut devices, &overrides, &configured);
             let mut capabilities = crate::platform::capabilities::current_capabilities(
                 crate::platform::capabilities::windows_interception_available(),
