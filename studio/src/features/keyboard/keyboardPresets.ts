@@ -81,8 +81,13 @@ export const keyboardPresets: Record<KeyboardVisualPreset, KeyboardPreset> = {
 
 export function presetKeys(preset: KeyboardVisualPreset | undefined, layout: KeyboardLayout): KeyboardPreset {
   if (preset) return keyboardPresets[preset];
-  const keys = layout === 'Iso' ? iso : layout === 'Jis' ? jis : ansi;
-  return { id: 'generic', label: layout, keys, fnLegends: {} };
+  const base = layout === 'Iso' ? iso : layout === 'Jis' ? jis : ansi;
+  return {
+    id: 'generic',
+    label: 'Generic Extended',
+    keys: [...base, ...navKeys],
+    fnLegends: {},
+  };
 }
 
 export function boardBounds(keys: KeyGeometry[]): { width: number; height: number } {
