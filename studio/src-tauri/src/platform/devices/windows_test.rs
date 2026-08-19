@@ -89,3 +89,20 @@ fn groups_keyboard_hardware_metadata() {
     assert_eq!(devices[0].function_key_count, Some(12));
     assert_eq!(devices[0].keyboard_type, Some(4));
 }
+
+#[test]
+fn prefers_meaningful_metadata_when_a_physical_keyboard_has_multiple_hid_interfaces() {
+    let container = Some("{11111111-1111-1111-1111-111111111111}");
+    let mut sparse = raw("path-a", container, 1, 2);
+    sparse.reported_key_count = Some(0);
+    sparse.function_key_count = Some(0);
+    sparse.keyboard_type = Some(0);
+    let mut keyboard = raw("path-b", container, 1, 2);
+    keyboard.reported_key_count = Some(104);
+    keyboard.function_key_count = Some(12);
+    keyboard.keyboard_type = Some(4);
+    let devices = group_interfaces(vec![sparse, keyboard]);
+    assert_eq!(devices[0].reported_key_count, Some(104));
+    assert_eq!(devices[0].function_key_count, Some(12));
+    assert_eq!(devices[0].keyboard_type, Some(4));
+}
