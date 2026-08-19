@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '../../components/Button';
 import { Modal } from '../../components/Modal';
 
@@ -14,22 +14,23 @@ export function LayerDialog({
   onSubmit: (name: string) => void;
 }) {
   const [name, setName] = useState('');
-
-  useEffect(() => {
-    if (open) setName('');
-  }, [open]);
-
   const trimmed = name.trim();
   const duplicate = Boolean(trimmed) && existingNames.some(
     item => item.trim().toLowerCase() === trimmed.toLowerCase(),
   );
   const invalid = !trimmed || duplicate;
 
+  const close = () => {
+    setName('');
+    onClose();
+  };
   const submit = () => {
-    if (!invalid) onSubmit(trimmed);
+    if (invalid) return;
+    onSubmit(trimmed);
+    setName('');
   };
 
-  return <Modal open={open} title="Add layer" onClose={onClose} className="layer-dialog">
+  return <Modal open={open} title="Add layer" onClose={close} className="layer-dialog">
     <form onSubmit={event => { event.preventDefault(); submit(); }}>
       <label className="field">Layer name
         <input
@@ -41,7 +42,7 @@ export function LayerDialog({
       </label>
       {duplicate && <span className="chord-error">A layer with this name already exists.</span>}
       <div className="dialog-actions">
-        <Button type="button" onClick={onClose}>Cancel</Button>
+        <Button type="button" onClick={close}>Cancel</Button>
         <Button type="submit" className="primary" disabled={invalid}>Add layer</Button>
       </div>
     </form>
