@@ -6,6 +6,8 @@ on:
     branches: ["feat/add-GUI"]
     paths:
       - ".github/workflows/windows-manual-build.yml"
+  pull_request:
+    branches: ["feat/add-GUI"]
 
 jobs:
   build-windows:
