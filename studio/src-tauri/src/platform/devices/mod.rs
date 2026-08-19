@@ -107,6 +107,9 @@ mod tests {
 
         let once = devices.clone();
         apply_saved_layouts(&mut devices, &legacy, &configured);
-        assert_eq!(devices, once, "normalization must be stable across watcher polls");
+        assert_eq!(
+            devices, once,
+            "normalization must be stable across watcher polls"
+        );
     }
 }
