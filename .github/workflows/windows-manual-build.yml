@@ -2,6 +2,9 @@ name: Windows Manual Build
 
 on:
   workflow_dispatch:
+  push:
+    branches: ["feat/add-GUI"]
+    paths: [".github/workflows/windows-manual-build.yml"]
 
 jobs:
   build-windows:
@@ -22,11 +25,36 @@ jobs:
       - name: Install frontend dependencies
         working-directory: studio
         run: pnpm install --no-frozen-lockfile
+      - name: Test frontend
+        working-directory: studio
+        run: pnpm test
+      - name: Lint frontend
+        working-directory: studio
+        run: pnpm lint
+      - name: Typecheck frontend
+        working-directory: studio
+        run: pnpm typecheck
+      - name: Build frontend
+        working-directory: studio
+        run: pnpm build
+      - name: Check line limits
+        working-directory: studio
+        run: pnpm lint:lines
+      - name: Test line-limit rules
+        working-directory: studio
+        run: pnpm test:lines
+      - name: Test profile UI rules
+        working-directory: studio
+        run: pnpm test:rules
       - name: Build Kanata sidecars
         working-directory: studio
         env:
           TARGET: x86_64-pc-windows-msvc
         run: pnpm sidecars
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+      - name: Test Kanata Studio Rust library
+        run: cargo test -p kanata-studio --lib
       - name: Build Kanata Studio
         working-directory: studio
         run: pnpm tauri build
