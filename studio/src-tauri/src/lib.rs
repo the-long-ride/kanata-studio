@@ -74,9 +74,11 @@ pub fn run() {
                 configured_keyboards = reconciled.keyboards;
             }
 
-            platform::devices::apply_layouts(&mut devices, &settings.device_layout_overrides);
-            platform::devices::apply_configured_layouts(&mut devices, &configured_keyboards);
-            platform::devices::detect_layouts(&mut devices);
+            platform::devices::apply_saved_layouts(
+                &mut devices,
+                &settings.device_layout_overrides,
+                &configured_keyboards,
+            );
             let mut capabilities = platform::capabilities::current_capabilities(
                 platform::capabilities::windows_interception_available(),
             );
