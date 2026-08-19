@@ -7,7 +7,7 @@ use crate::{
     engine::switcher::ProfileSwitcher,
     platform::{
         active_app::system_provider,
-        devices::{DeviceProvider, SystemDeviceProvider, apply_layouts},
+        devices::{DeviceProvider, SystemDeviceProvider, apply_saved_layouts},
     },
 };
 
@@ -51,7 +51,8 @@ fn start_device_watcher(app: AppHandle) {
                 continue;
             };
             let overrides = state.settings.read().device_layout_overrides.clone();
-            apply_layouts(&mut devices, &overrides);
+            let configured = state.configured_keyboards.read().clone();
+            apply_saved_layouts(&mut devices, &overrides, &configured);
             let mut capabilities = crate::platform::capabilities::current_capabilities(
                 crate::platform::capabilities::windows_interception_available(),
             );
