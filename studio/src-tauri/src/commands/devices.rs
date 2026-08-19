@@ -4,10 +4,7 @@ use crate::{
     app_state::AppState,
     domain::KeyboardDevice,
     engine::RuntimeHealth,
-    platform::devices::{
-        DeviceProvider, SystemDeviceProvider, apply_configured_layouts, apply_layouts,
-        detect_layouts,
-    },
+    platform::devices::{DeviceProvider, SystemDeviceProvider, apply_saved_layouts},
     runtime::apply_current_context,
     storage::ProfileRepository,
 };
@@ -37,9 +34,7 @@ pub fn list_keyboards(state: State<'_, AppState>) -> Result<Vec<KeyboardDevice>,
     }
 
     let overrides = state.settings.read().device_layout_overrides.clone();
-    apply_layouts(&mut devices, &overrides);
-    apply_configured_layouts(&mut devices, &reconciled.keyboards);
-    detect_layouts(&mut devices);
+    apply_saved_layouts(&mut devices, &overrides, &reconciled.keyboards);
 
     if reconciled.changed {
         *state.profiles.write() = reconciled.profiles;
