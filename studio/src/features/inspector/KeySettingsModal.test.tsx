@@ -1,9 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ActionSpec } from '../../lib/types';
 import * as moduleUnderTest from './KeySettingsModal';
 
 const KeySettingsModal = (moduleUnderTest as unknown as { KeySettingsModal?: React.ComponentType<Record<string, unknown>> }).KeySettingsModal;
+afterEach(cleanup);
 
 describe('KeySettingsModal', () => {
   it('shows direct/inherited state and resets the direct override', () => {
