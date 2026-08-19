@@ -39,7 +39,9 @@ export function resolveVisualPreset(input: VisualPresetInput): KeyboardVisualPre
   if (/\b75\b|air\s*75|air75|keychron\s*k2\b|keychron\s*q1\b/.test(name)) return '75';
   if (/\b65\b|keychron\s*k6\b|keychron\s*q2\b/.test(name)) return '65';
   if (/\b60\b|poker|anne\s*pro/.test(name)) return '60';
-  if ([101, 102, 104, 105].includes(input.reportedKeyCount ?? -1)) return 'fullsize';
+  const keyCount = input.reportedKeyCount ?? -1;
+  if ([101, 102, 104, 105].includes(keyCount)) return 'fullsize';
+  if (input.keyboardType === 0x7 && [106, 109].includes(keyCount)) return 'fullsize';
   return undefined;
 }
 
