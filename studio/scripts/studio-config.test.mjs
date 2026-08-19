@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
 const json = (path) => JSON.parse(read(path));
@@ -14,7 +15,7 @@ function sourceFiles(dir) {
 }
 
 test('shared Switch is the only production checkbox primitive', () => {
-  const root = new URL('../src', import.meta.url).pathname;
+  const root = fileURLToPath(new URL('../src', import.meta.url));
   const offenders = sourceFiles(root)
     .filter(path => !path.endsWith('/components/Switch.tsx') && !path.includes('.test.'))
     .filter(path => /type\s*=\s*["']checkbox["']/.test(fs.readFileSync(path, 'utf8')));
