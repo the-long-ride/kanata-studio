@@ -19,7 +19,13 @@ type ManagerProps = {
 
 export function KeyboardManagerDialog(props: ManagerProps) {
   if (!props.open || !props.keyboard) return null;
-  const key = `${props.keyboard.id}:${props.keyboard.name}:${props.keyboard.layoutOverride ?? 'Auto'}:${props.keyboard.visualPresetOverride ?? 'Auto'}`;
+  const key = [
+    props.keyboard.id,
+    props.keyboard.name,
+    props.keyboard.layoutOverride ?? 'Auto',
+    props.keyboard.visualPresetOverride ?? 'Auto',
+    props.keyboard.reportedKeyCount ?? 'Unknown',
+  ].join(':');
   return <KeyboardManagerForm key={key} {...props} keyboard={props.keyboard} />;
 }
 
@@ -80,7 +86,7 @@ function KeyboardManagerForm({
       </label>
       <label className="field">Visual keyboard
         <Select value={visualPreset} onChange={event => setVisualPreset(event.target.value as KeyboardVisualPreset | 'Auto')}>
-          <option value="Auto">Auto ({keyboard.visualPreset ?? keyboard.layout})</option>
+          <option value="Auto">{autoVisualLabel(keyboard)}</option>
           <option value="fullsize">Full size</option>
           <option value="tkl">TKL</option>
           <option value="75">75%</option>
@@ -91,6 +97,7 @@ function KeyboardManagerForm({
       <div className="keyboard-metadata">
         <span>ID</span><code>{keyboard.id}</code>
         <span>USB</span><code>{usbLabel(keyboard)}</code>
+        {keyboard.reportedKeyCount != null && <><span>Keys</span><code>{keyboard.reportedKeyCount}</code></>}
       </div>
       <div className="keyboard-copy-block">
         <strong>Copy everything from</strong>
@@ -114,6 +121,19 @@ function KeyboardManagerForm({
       </div>
     </>}
   </Modal>;
+}
+
+function autoVisualLabel(keyboard: KeyboardCatalogItem): string {
+  const labels: Record<KeyboardVisualPreset, string> = {
+    fullsize: 'Full size',
+    tkl: 'TKL',
+    '75': '75%',
+    '65': '65%',
+    '60': '60%',
+  };
+  const visual = keyboard.visualPreset ? labels[keyboard.visualPreset] : 'Generic Extended';
+  const keyCount = keyboard.reportedKeyCount == null ? '' : ` · ${keyboard.reportedKeyCount} keys`;
+  return `Auto (${visual}${keyCount})`;
 }
 
 function usbLabel(keyboard: KeyboardCatalogItem): string {
