@@ -50,3 +50,25 @@ pub enum Platform {
     Macos,
     Linux,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn old_keyboard_device_json_defaults_new_hardware_metadata() {
+        let device: KeyboardDevice = serde_json::from_str(r#"{
+            "id":"kbd",
+            "name":"Keyboard",
+            "vendorId":4660,
+            "productId":22136,
+            "path":null,
+            "interfacePaths":[],
+            "layout":"Ansi",
+            "manualLayout":null
+        }"#).unwrap();
+        assert_eq!(device.reported_key_count, None);
+        assert_eq!(device.function_key_count, None);
+        assert_eq!(device.keyboard_type, None);
+    }
+}
