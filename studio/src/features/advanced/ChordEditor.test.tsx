@@ -28,16 +28,29 @@ function setWithChords(chords: ChordSet['chords']): ChordSet {
   };
 }
 
-it('creates a chord set with 50 ms and all layers', () => {
+function openExistingSet() {
+  fireEvent.click(screen.getByRole('button', { name: 'Editing' }));
+  expect(screen.getByRole('dialog', { name: 'Chord set' })).toBeInTheDocument();
+}
+
+it('creates a chord set with 50 ms and all layers in a modal', () => {
   render(<Harness />);
   fireEvent.click(screen.getByRole('button', { name: 'Add chord set' }));
+  expect(screen.getByRole('dialog', { name: 'Chord set' })).toBeInTheDocument();
   expect(screen.getByDisplayValue('Chord Set 1')).toBeInTheDocument();
   expect(screen.getByLabelText('Chord timeout')).toHaveValue(50);
   expect(screen.getByLabelText('All layers')).toBeChecked();
 });
 
+it('opens an existing chord set in the same modal', () => {
+  render(<Harness initial={[setWithChords([])]} />);
+  openExistingSet();
+  expect(screen.getByDisplayValue('Editing')).toBeInTheDocument();
+});
+
 it('records physical keys for a new chord', () => {
   render(<Harness initial={[setWithChords([])]} />);
+  openExistingSet();
   fireEvent.click(screen.getByRole('button', { name: 'Add chord' }));
   fireEvent.keyDown(window, { code: 'KeyJ' });
   fireEvent.keyDown(window, { code: 'KeyK' });
@@ -49,6 +62,7 @@ it('records physical keys for a new chord', () => {
 
 it('keeps recording long enough for a three-key chord', () => {
   render(<Harness initial={[setWithChords([])]} />);
+  openExistingSet();
   fireEvent.click(screen.getByRole('button', { name: 'Add chord' }));
   fireEvent.keyDown(window, { code: 'KeyJ' });
   fireEvent.keyDown(window, { code: 'KeyK' });
@@ -61,6 +75,7 @@ it('keeps recording long enough for a three-key chord', () => {
 
 it('edits layer scope without losing the all-layer default', () => {
   render(<Harness initial={[setWithChords([])]} />);
+  openExistingSet();
   fireEvent.click(screen.getByLabelText('All layers'));
   fireEvent.click(screen.getByLabelText('nav'));
   expect(screen.getByTestId('state')).toHaveTextContent('"layers":["base"]');
@@ -74,5 +89,6 @@ it('shows a conflict for duplicate active physical combinations', () => {
     { keys: ['j', 'k'], action: { type: 'key', key: 'esc' } },
     { keys: ['k', 'j'], action: { type: 'key', key: 'tab' } },
   ])]} />);
+  openExistingSet();
   expect(screen.getAllByText('Conflicts with another active chord')).toHaveLength(2);
 });
