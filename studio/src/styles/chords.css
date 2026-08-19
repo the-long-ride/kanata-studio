@@ -168,6 +168,20 @@
   grid-column: 1 / -1;
 }
 
+.advanced-sidebar-content .chord-set-dialog .chord-set-fields {
+  grid-template-columns: minmax(160px,1fr) 120px minmax(240px,1.4fr);
+  align-items: end;
+}
+
+.advanced-sidebar-content .chord-set-dialog .chord-row {
+  grid-template-columns: minmax(110px,auto) 18px minmax(100px,auto) minmax(150px,1fr) auto;
+}
+
+.advanced-sidebar-content .chord-set-dialog .chord-manual,
+.advanced-sidebar-content .chord-set-dialog .chord-row > .ui-button {
+  grid-column: auto;
+}
+
 @media (max-width: 900px) {
   .chord-editor {
     grid-template-columns: 150px minmax(0,1fr);
