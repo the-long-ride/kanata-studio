@@ -7,6 +7,7 @@ describe('resolveVisualPreset', () => {
     expect(resolveVisualPreset({ name: 'Keychron K8 TKL', layout: 'Ansi', reportedKeyCount: 104 })).toBe('tkl');
     expect(resolveVisualPreset({ name: 'NuPhy Air75', layout: 'Ansi', reportedKeyCount: 104 })).toBe('75');
     expect(resolveVisualPreset({ name: 'Windows keyboard', layout: 'Ansi', reportedKeyCount: 104 })).toBe('fullsize');
+    expect(resolveVisualPreset({ name: 'Windows keyboard', layout: 'Jis', reportedKeyCount: 109, keyboardType: 0x7 })).toBe('fullsize');
   });
 
   it('keeps weak compact metadata on generic extended geometry', () => {
