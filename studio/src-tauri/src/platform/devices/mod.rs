@@ -32,6 +32,16 @@ impl DeviceProvider for SystemDeviceProvider {
     }
 }
 
+pub fn apply_saved_layouts(
+    devices: &mut [KeyboardDevice],
+    overrides: &BTreeMap<String, KeyboardLayout>,
+    configured: &[ConfiguredKeyboard],
+) {
+    apply_layouts(devices, overrides);
+    apply_configured_layouts(devices, configured);
+    detect_layouts(devices);
+}
+
 pub fn apply_layouts(devices: &mut [KeyboardDevice], overrides: &BTreeMap<String, KeyboardLayout>) {
     for device in devices.iter_mut() {
         if let Some(layout) = overrides.get(&device.id) {
