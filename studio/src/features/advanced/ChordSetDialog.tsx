@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../components/Button';
 import { Modal } from '../../components/Modal';
 import { Switch } from '../../components/Switch';
@@ -44,22 +44,32 @@ export function ChordSetDialog({
   onClose: () => void;
 }) {
   const [recording, setRecording] = useState<number>();
+  const setRef = useRef(set);
+  useEffect(() => { setRef.current = set; }, [set]);
+
+  const emit = (next: ChordSet) => {
+    setRef.current = next;
+    onChange(next);
+  };
 
   useEffect(() => {
     if (!open || recording === undefined) return undefined;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.repeat) return;
       const key = keyboardEventCodeToKanataId(event.code);
-      const current = set.chords[recording];
+      const currentSet = setRef.current;
+      const current = currentSet.chords[recording];
       if (!key || !current || current.keys.includes(key)) return;
       event.preventDefault();
-      const chords = [...set.chords];
+      const chords = [...currentSet.chords];
       chords[recording] = { ...current, keys: [...current.keys, key] };
-      onChange({ ...set, chords });
+      const next = { ...currentSet, chords };
+      setRef.current = next;
+      onChange(next);
     };
     const onKeyUp = (event: KeyboardEvent) => {
       const key = keyboardEventCodeToKanataId(event.code);
-      const current = set.chords[recording];
+      const current = setRef.current.chords[recording];
       if (key && current?.keys.includes(key) && current.keys.length >= 2) {
         event.preventDefault();
         setRecording(undefined);
@@ -71,48 +81,52 @@ export function ChordSetDialog({
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [onChange, open, recording, set]);
+  }, [onChange, open, recording]);
 
   useEffect(() => {
     if (!open) setRecording(undefined);
   }, [open]);
 
   const replaceChord = (chordIndex: number, chord: ChordEntry) => {
-    const chords = [...set.chords];
+    const currentSet = setRef.current;
+    const chords = [...currentSet.chords];
     chords[chordIndex] = chord;
-    onChange({ ...set, chords });
+    emit({ ...currentSet, chords });
   };
 
   const addChord = () => {
-    const chordIndex = set.chords.length;
-    onChange({
-      ...set,
-      chords: [...set.chords, { keys: [], action: { type: 'key', key: 'esc' } }],
+    const currentSet = setRef.current;
+    const chordIndex = currentSet.chords.length;
+    emit({
+      ...currentSet,
+      chords: [...currentSet.chords, { keys: [], action: { type: 'key', key: 'esc' } }],
     });
     setRecording(chordIndex);
   };
 
   const removeChord = (chordIndex: number) => {
-    onChange({ ...set, chords: set.chords.filter((_, index) => index !== chordIndex) });
+    const currentSet = setRef.current;
+    emit({ ...currentSet, chords: currentSet.chords.filter((_, index) => index !== chordIndex) });
     setRecording(undefined);
   };
 
   const setManualKeys = (chordIndex: number, value: string) => {
     const keys = value.toLowerCase().split(/[+,\s]+/).filter(Boolean);
-    replaceChord(chordIndex, { ...set.chords[chordIndex], keys: [...new Set(keys)] });
+    replaceChord(chordIndex, { ...setRef.current.chords[chordIndex], keys: [...new Set(keys)] });
   };
 
   const toggleAllLayers = (checked: boolean) => {
-    onChange({ ...set, layers: checked ? [] : [...layers] });
+    emit({ ...setRef.current, layers: checked ? [] : [...layers] });
   };
 
   const toggleLayer = (layer: string, checked: boolean) => {
-    if (set.layers.length === 0) return;
-    if (!checked && set.layers.length === 1 && set.layers[0] === layer) return;
+    const currentSet = setRef.current;
+    if (currentSet.layers.length === 0) return;
+    if (!checked && currentSet.layers.length === 1 && currentSet.layers[0] === layer) return;
     const nextLayers = checked
-      ? [...new Set([...set.layers, layer])]
-      : set.layers.filter(item => item !== layer);
-    onChange({ ...set, layers: nextLayers });
+      ? [...new Set([...currentSet.layers, layer])]
+      : currentSet.layers.filter(item => item !== layer);
+    emit({ ...currentSet, layers: nextLayers });
   };
 
   return <Modal open={open} title="Chord set" onClose={onClose} className="chord-set-dialog">
@@ -120,12 +134,12 @@ export function ChordSetDialog({
       <div className="chord-set-fields">
         <label className="field">Name
           <input className="ui-input" value={set.name}
-            onChange={event => onChange({ ...set, name: event.target.value })} />
+            onChange={event => emit({ ...setRef.current, name: event.target.value })} />
         </label>
         <label className="field">Timeout (ms)
           <input className="ui-input" aria-label="Chord timeout" type="number" min={1}
             max={MAX_CHORD_TIMEOUT_MS} value={set.timeoutMs}
-            onChange={event => onChange({ ...set, timeoutMs: Number(event.target.value) })} />
+            onChange={event => emit({ ...setRef.current, timeoutMs: Number(event.target.value) })} />
         </label>
         <div className="chord-layer-scope">
           <span>Active layers</span>
