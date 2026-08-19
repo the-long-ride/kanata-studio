@@ -5,6 +5,23 @@ import fs from 'node:fs';
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
 const json = (path) => JSON.parse(read(path));
 
+function sourceFiles(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+    const path = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) return sourceFiles(path);
+    return /\.(ts|tsx)$/.test(entry.name) ? [path] : [];
+  });
+}
+
+test('shared Switch is the only production checkbox primitive', () => {
+  const root = new URL('../src', import.meta.url).pathname;
+  const offenders = sourceFiles(root)
+    .filter(path => !path.endsWith('/components/Switch.tsx') && !path.includes('.test.'))
+    .filter(path => /type\s*=\s*["']checkbox["']/.test(fs.readFileSync(path, 'utf8')));
+  assert.deepEqual(offenders, [], 'boolean controls must reuse components/Switch.tsx');
+  assert.match(read('../src/components/Switch.tsx'), /type="checkbox"/);
+});
+
 test('updater plugin is not registered without a complete updater config', () => {
   const lib = read('../src-tauri/src/lib.rs');
   const config = json('../src-tauri/tauri.conf.json');
