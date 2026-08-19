@@ -2,9 +2,8 @@ name: Windows Manual Build
 
 on:
   workflow_dispatch:
-  push:
-    branches: ["feat/add-GUI"]
-    paths: [".github/workflows/windows-manual-build.yml"]
+  pull_request:
+    branches: ["tmp/sidebar-viewport-verify-base"]
 
 jobs:
   build-windows:
