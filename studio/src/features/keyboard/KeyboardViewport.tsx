@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type WheelEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type WheelEvent } from 'react';
 import type { UiMode } from '../../lib/types';
 
 const MIN_ZOOM = 0.5;
@@ -7,8 +7,10 @@ const ZOOM_STEP = 0.1;
 const KEEP_VISIBLE = 80;
 
 type ViewState = { zoom: number; x: number; y: number };
+type ViewStates = Record<UiMode, ViewState>;
 type DragState = { pointerId: number; x: number; y: number; startX: number; startY: number };
 
+const initialView = (): ViewState => ({ zoom: 1, x: 0, y: 0 });
 const clampZoom = (zoom: number) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
 
 export function KeyboardViewport({
@@ -26,13 +28,12 @@ export function KeyboardViewport({
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | undefined>(undefined);
-  const previousMode = useRef<UiMode>(viewMode);
-  const views = useRef<Record<UiMode, ViewState>>({
-    Beginner: { zoom: 1, x: 0, y: 0 },
-    Advanced: { zoom: 1, x: 0, y: 0 },
-  });
-  const [view, setView] = useState<ViewState>(() => views.current[viewMode]);
+  const [views, setViews] = useState<ViewStates>(() => ({
+    Beginner: initialView(),
+    Advanced: initialView(),
+  }));
   const [panning, setPanning] = useState(false);
+  const view = views[viewMode];
 
   const viewportSize = useCallback(() => {
     const node = viewportRef.current;
@@ -64,13 +65,12 @@ export function KeyboardViewport({
 
   const commit = useCallback((next: ViewState) => {
     const clamped = clampPan(next);
-    views.current[viewMode] = clamped;
-    setView(clamped);
+    setViews(current => ({ ...current, [viewMode]: clamped }));
   }, [clampPan, viewMode]);
 
   const fitState = useCallback((): ViewState => {
     const size = viewportSize();
-    if (!size.width || !size.height || !boardWidth || !boardHeight) return { zoom: 1, x: 0, y: 0 };
+    if (!size.width || !size.height || !boardWidth || !boardHeight) return initialView();
     const padding = 36;
     const zoom = clampZoom(Math.min(
       (size.width - padding * 2) / boardWidth,
@@ -86,17 +86,11 @@ export function KeyboardViewport({
   const fit = useCallback(() => commit(fitState()), [commit, fitState]);
 
   useEffect(() => {
-    if (previousMode.current === viewMode) return;
-    views.current[previousMode.current] = view;
-    previousMode.current = viewMode;
-    setView(views.current[viewMode]);
-  }, [view, viewMode]);
-
-  useLayoutEffect(() => {
-    const next = fitState();
-    views.current.Beginner = next;
-    views.current.Advanced = next;
-    setView(next);
+    const frame = window.requestAnimationFrame(() => {
+      const next = fitState();
+      setViews({ Beginner: next, Advanced: next });
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [fitState, resetKey]);
 
   const zoomTo = (zoom: number, clientX?: number, clientY?: number) => {
