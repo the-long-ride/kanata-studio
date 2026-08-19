@@ -61,3 +61,42 @@ pub fn apply_configured_layouts(devices: &mut [KeyboardDevice], configured: &[Co
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use super::apply_saved_layouts;
+    use crate::domain::{ConfiguredKeyboard, KeyboardDevice, KeyboardLayout};
+
+    #[test]
+    fn configured_layout_override_wins_consistently_over_legacy_override() {
+        let mut devices = vec![KeyboardDevice {
+            id: "kbd-1".into(),
+            name: "Keyboard".into(),
+            vendor_id: None,
+            product_id: None,
+            path: None,
+            interface_paths: Vec::new(),
+            layout: KeyboardLayout::Unknown,
+            manual_layout: None,
+        }];
+        let legacy = BTreeMap::from([("kbd-1".into(), KeyboardLayout::Ansi)]);
+        let configured = vec![ConfiguredKeyboard {
+            id: "kbd-1".into(),
+            name: "Keyboard".into(),
+            detected_name: "Keyboard".into(),
+            vendor_id: None,
+            product_id: None,
+            layout_override: Some(KeyboardLayout::Iso),
+            visual_preset_override: None,
+        }];
+
+        apply_saved_layouts(&mut devices, &legacy, &configured);
+        assert_eq!(devices[0].manual_layout, Some(KeyboardLayout::Iso));
+
+        let once = devices.clone();
+        apply_saved_layouts(&mut devices, &legacy, &configured);
+        assert_eq!(devices, once, "normalization must be stable across watcher polls");
+    }
+}
