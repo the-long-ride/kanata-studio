@@ -174,6 +174,42 @@ mod tests {
     }
 
     #[test]
+    fn reload_with_retry_tolerates_listener_starting_late() {
+        use std::{net::TcpListener, thread};
+
+        let reservation = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+        let port = reservation.local_addr().unwrap().port();
+        drop(reservation);
+
+        let server = thread::spawn(move || {
+            thread::sleep(Duration::from_millis(150));
+            let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, port)).unwrap();
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut reader = BufReader::new(stream.try_clone().unwrap());
+            let mut request = String::new();
+            reader.read_line(&mut request).unwrap();
+            stream.write_all(&ServerResponse::Ok.as_bytes()).unwrap();
+            stream
+                .write_all(
+                    &ServerMessage::ReloadResult {
+                        ok: true,
+                        timeout_ms: None,
+                    }
+                    .as_bytes(),
+                )
+                .unwrap();
+        });
+
+        KanataTcpClient::reload_file_with_retry(
+            port,
+            Path::new("runtime.kbd"),
+            Duration::from_secs(1),
+        )
+        .unwrap();
+        server.join().unwrap();
+    }
+
+    #[test]
     fn reload_message_keeps_wait_contract() {
         let message = ClientMessage::ReloadFile {
             path: "runtime.kbd".into(),
