@@ -65,3 +65,59 @@ jobs:
           touch studio/src-tauri/binaries/kanata-engine-interception-x86_64-pc-windows-msvc.exe
           touch studio/src-tauri/binaries/interception.dll
       - run: cargo check -p kanata-studio --lib --target x86_64-pc-windows-msvc
+
+  windows-build:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.16.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - name: Install frontend dependencies
+        working-directory: studio
+        run: pnpm install --no-frozen-lockfile
+      - name: Test frontend
+        working-directory: studio
+        run: pnpm test
+      - name: Lint frontend
+        working-directory: studio
+        run: pnpm lint
+      - name: Typecheck frontend
+        working-directory: studio
+        run: pnpm typecheck
+      - name: Build frontend
+        working-directory: studio
+        run: pnpm build
+      - name: Test config guardrails
+        working-directory: studio
+        run: pnpm test:config
+      - name: Build Kanata sidecars
+        working-directory: studio
+        env:
+          TARGET: x86_64-pc-windows-msvc
+        run: pnpm sidecars
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+      - name: Test Kanata Studio Rust library
+        run: cargo test -p kanata-studio --lib
+      - name: Build Kanata Studio
+        working-directory: studio
+        run: pnpm tauri build
+      - name: Upload Windows binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: kanata-studio-windows-x64-modal-keyboard
+          if-no-files-found: error
+          compression-level: 6
+          path: |
+            target/release/kanata-studio.exe
+            target/release/bundle/nsis/*.exe
+            target/release/bundle/msi/*.msi
