@@ -48,6 +48,14 @@ impl KanataTcpClient {
         }
     }
 
+    pub fn reload_file_with_retry(
+        port: u16,
+        path: &Path,
+        deadline: Duration,
+    ) -> Result<(), EngineError> {
+        Self::connect_with_retry(port, deadline)?.reload_file(path)
+    }
+
     pub fn write_message(&mut self, message: &ClientMessage) -> Result<(), EngineError> {
         let mut bytes = serde_json::to_vec(message)?;
         bytes.push(b'\n');
