@@ -4,7 +4,7 @@ import { Button } from '../../components/Button';
 import { Modal } from '../../components/Modal';
 import { Select } from '../../components/Select';
 import type { KeyboardLayout, KeyboardVisualPreset } from '../../lib/types';
-import type { KeyboardCatalogItem } from './keyboardCatalog';
+import { resolveVisualPreset, type KeyboardCatalogItem } from './keyboardCatalog';
 
 type ManagerProps = {
   open: boolean;
@@ -131,7 +131,14 @@ function autoVisualLabel(keyboard: KeyboardCatalogItem): string {
     '65': '65%',
     '60': '60%',
   };
-  const visual = keyboard.visualPreset ? labels[keyboard.visualPreset] : 'Generic Extended';
+  const autoPreset = resolveVisualPreset({
+    name: keyboard.detectedName,
+    layout: keyboard.layout,
+    reportedKeyCount: keyboard.reportedKeyCount,
+    functionKeyCount: keyboard.functionKeyCount,
+    keyboardType: keyboard.keyboardType,
+  });
+  const visual = autoPreset ? labels[autoPreset] : 'Generic Extended';
   const keyCount = keyboard.reportedKeyCount == null ? '' : ` · ${keyboard.reportedKeyCount} keys`;
   return `Auto (${visual}${keyCount})`;
 }
