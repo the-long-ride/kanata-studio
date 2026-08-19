@@ -19,6 +19,7 @@ import { SettingsDialog } from '../features/settings/SettingsDialog';
 import { RuntimeErrorDialog } from '../features/status/RuntimeErrorDialog';
 import { AppShell } from './AppShell';
 import { completeOnboarding } from './onboardingRuntime';
+import { PrimarySidebar } from './PrimarySidebar';
 import { autostartIssue, engineIssue, errorDetails, type RuntimeIssue } from './runtimeIssues';
 import { useRuntimeIssueQueue } from './useRuntimeIssueQueue';
 import { addLayer, clearLayerMapping, layerMappings, makeAppProfile, setChordAction, setChordSets, setLayerMapping } from './profileHelpers';
@@ -27,7 +28,7 @@ type SelectedChord = { setIndex: number; chordIndex: number };
 
 const fallback: BootstrapState = {
   profiles: [],
-  settings: { onboardingCompleted: false, startWithSystem: true, remappingEnabled: true, stopKanataOnQuit: true, deviceLayoutOverrides: {}, uiMode: 'Beginner', leftRailWidth: 260, rightPaneWidth: 340 },
+  settings: { onboardingCompleted: false, startWithSystem: true, remappingEnabled: true, stopKanataOnQuit: true, deviceLayoutOverrides: {}, uiMode: 'Beginner', leftRailWidth: 320, rightPaneWidth: 340 },
   devices: [], configuredKeyboards: [],
   capabilities: { platform: 'Windows', perAppAutoSwitch: true, perDeviceMapping: 'RequiresWindowsInterception', windowTitleMatching: true, manualProfileSelection: true, permissions: {} },
   engineStatuses: [], activeProfileId: 'global', health: 'Running',
@@ -202,16 +203,16 @@ export function App() {
   const errorDialog = <RuntimeErrorDialog issue={runtimeIssue} busy={retrying} onRetry={() => void retryRuntimeIssue()} onLogs={() => void openLogs()} onDismiss={dismissRuntimeIssue} />;
   if (!state.settings.onboardingCompleted) return <><Onboarding devices={state.devices} capabilities={state.capabilities} settings={state.settings} busy={onboardingBusy} onFinish={onOnboarding} />{errorDialog}</>;
 
+  const keyboardControl = <KeyboardSelector items={keyboard.catalog} selectedId={keyboard.selectedId} onSelect={id => { setActiveLayer('base'); setSelectedKey(undefined); setSelectedChord(undefined); void keyboard.select(id); }} onManage={() => setManagerOpen(true)} />;
+  const profileRail = <ProfileRail profiles={scopedProfiles} selected={profile?.id ?? ''} keyboardName={keyboard.selected?.name} canCreate={Boolean(keyboard.selected?.configured)} onSelect={selectProfile} onCreate={() => setCreateOpen(true)} />;
+
   return <>
     <AppShell
-      mode={mode}
-      onMode={onMode}
-      keyboardControl={<KeyboardSelector items={keyboard.catalog} selectedId={keyboard.selectedId} onSelect={id => { setActiveLayer('base'); setSelectedKey(undefined); setSelectedChord(undefined); void keyboard.select(id); }} onManage={() => setManagerOpen(true)} />}
-      rail={<ProfileRail profiles={scopedProfiles} selected={profile?.id ?? ''} keyboardName={keyboard.selected?.name} canCreate={Boolean(keyboard.selected?.configured)} onSelect={selectProfile} onCreate={() => setCreateOpen(true)} />}
+      rail={<PrimarySidebar keyboardControl={keyboardControl} mode={mode} onMode={onMode} profileRail={profileRail} />}
       main={main}
-      inspector={inspector}
+      inspector={mode === 'Advanced' ? inspector : undefined}
       status={runtimeLabel(state)}
-      leftRailWidth={state.settings.leftRailWidth ?? 260}
+      leftRailWidth={state.settings.leftRailWidth ?? 320}
       rightPaneWidth={state.settings.rightPaneWidth ?? 340}
       onPaneWidthsChange={onPaneWidthsChange}
       onSettings={() => setSettingsOpen(true)}
