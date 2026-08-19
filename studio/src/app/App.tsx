@@ -4,6 +4,7 @@ import { applyRuntime, checkForUpdate, convertProfileToRaw, createProfile, getBo
 import { AdvancedSidebar, type AdvancedPane } from '../features/advanced/AdvancedSidebar';
 import { chordSetsValid } from '../features/advanced/chordValidation';
 import { ConvertToRawDialog } from '../features/advanced/ConvertToRawDialog';
+import { LayerDialog } from '../features/advanced/LayerDialog';
 import { RawEditor } from '../features/advanced/RawEditor';
 import { KeySettingsModal } from '../features/inspector/KeySettingsModal';
 import { KeyboardCanvas } from '../features/keyboard/KeyboardCanvas';
@@ -47,6 +48,7 @@ export function App() {
   const [mode, setMode] = useState<UiMode>('Beginner');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [addLayerOpen, setAddLayerOpen] = useState(false);
   const [managerOpen, setManagerOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
   const [preview, setPreview] = useState<string>();
@@ -99,6 +101,9 @@ export function App() {
   const inheritedFrom = profile?.appMatcher ? baseProfile : sharedGlobal;
   const direct = useMemo(() => layerMappings(profile, activeLayer), [profile, activeLayer]);
   const inherited = useMemo(() => layerMappings(inheritedFrom, activeLayer), [inheritedFrom, activeLayer]);
+  const layerNames = profile?.source.kind === 'visual'
+    ? ['base', ...profile.source.advanced.layers.map(layer => layer.name)]
+    : ['base'];
   const selectedChordEntry = selectedChord && profile?.source.kind === 'visual'
     ? profile.source.advanced.chordSets?.[selectedChord.setIndex]?.chords[selectedChord.chordIndex]
     : undefined;
@@ -186,7 +191,13 @@ export function App() {
     }).catch(() => undefined).finally(() => setOnboardingBusy(false));
   };
   const onUndo = () => { const previous = undoStack.at(-1); if (previous) { setUndoStack(stack => stack.slice(0, -1)); queueApply(previous, false); } };
-  const onAddLayer = () => { if (!profile) return; const name = window.prompt('Layer name', 'nav')?.trim(); if (name) { queueApply(addLayer(profile, name)); setActiveLayer(name); } };
+  const onAddLayer = () => setAddLayerOpen(true);
+  const createLayer = (name: string) => {
+    if (!profile || profile.source.kind !== 'visual') return;
+    queueApply(addLayer(profile, name));
+    setActiveLayer(name);
+    setAddLayerOpen(false);
+  };
   const applyRaw = async (text: string) => {
     if (!profile) return; const server = serverProfiles.current.get(profile.id) ?? profile;
     const result = await setRawProfileText({ id: profile.id, text, expectedRevision: server.revision });
@@ -195,7 +206,7 @@ export function App() {
   };
   const manageKeyboard = async (id: string) => { await keyboard.select(id); setManagerOpen(true); };
   const selectProfile = (id: string) => {
-    setSelected(id); setActiveLayer('base'); setAdvancedPane('layers'); setSelectedChord(undefined); setSelectedKey(undefined); setPreview(undefined);
+    setSelected(id); setActiveLayer('base'); setAdvancedPane('layers'); setSelectedChord(undefined); setSelectedKey(undefined); setPreview(undefined); setAddLayerOpen(false);
     if (!state.capabilities.perAppAutoSwitch) void setManualProfile(id).then(engineStatuses => setState(old => ({ ...old, activeProfileId: id, engineStatuses }))).catch(error => reportIssue(engineIssue(error, retryRuntime)));
   };
 
@@ -209,7 +220,7 @@ export function App() {
     : undefined;
   const errorDialog = <RuntimeErrorDialog issue={runtimeIssue} busy={retrying} onRetry={() => void retryRuntimeIssue()} onLogs={() => void openLogs()} onDismiss={dismissRuntimeIssue} />;
   if (!state.settings.onboardingCompleted) return <><Onboarding devices={state.devices} capabilities={state.capabilities} settings={state.settings} busy={onboardingBusy} onFinish={onOnboarding} />{errorDialog}</>;
-  const keyboardControl = <KeyboardSelector items={keyboard.catalog} selectedId={keyboard.selectedId} onSelect={id => { setActiveLayer('base'); setAdvancedPane('layers'); setSelectedKey(undefined); setSelectedChord(undefined); setPreview(undefined); void keyboard.select(id); }} onManage={() => setManagerOpen(true)} />;
+  const keyboardControl = <KeyboardSelector items={keyboard.catalog} selectedId={keyboard.selectedId} onSelect={id => { setActiveLayer('base'); setAdvancedPane('layers'); setSelectedKey(undefined); setSelectedChord(undefined); setPreview(undefined); setAddLayerOpen(false); void keyboard.select(id); }} onManage={() => setManagerOpen(true)} />;
   const profileRail = <ProfileRail profiles={scopedProfiles} selected={profile?.id ?? ''} keyboardName={keyboard.selected?.name} canCreate={Boolean(keyboard.selected?.configured)} onSelect={selectProfile} onCreate={() => setCreateOpen(true)} />;
   const closeMappingModal = () => { setSelectedKey(undefined); setSelectedChord(undefined); };
 
@@ -218,6 +229,7 @@ export function App() {
       status={runtimeLabel(state)} leftRailWidth={state.settings.leftRailWidth ?? 320} rightPaneWidth={state.settings.rightPaneWidth ?? 340}
       onPaneWidthsChange={onPaneWidthsChange} onSettings={() => setSettingsOpen(true)} onUndo={undoStack.length ? onUndo : undefined} onRestart={() => void restartRuntime()} />
     {createOpen && <CreateProfileDialog onClose={() => setCreateOpen(false)} onCreate={input => void onCreate(input)} />}
+    <LayerDialog open={addLayerOpen && profile?.source.kind === 'visual'} existingNames={layerNames} onClose={() => setAddLayerOpen(false)} onSubmit={createLayer} />
     <KeyboardManagerDialog open={managerOpen} keyboard={keyboard.selected} items={keyboard.catalog} onClose={() => setManagerOpen(false)} onSetup={keyboard.setupSelected} onUpdate={keyboard.update} onCopy={keyboard.copyFrom} onRefresh={keyboard.refresh} />
     <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} state={state} keyboards={keyboard.catalog} onStart={value => void saveSetting({ startWithSystem: value })} onStopKanataOnQuit={value => void saveSetting({ stopKanataOnQuit: value })} onManageKeyboard={id => void manageKeyboard(id)} onUpdate={checkUpdate} />
     {selectedTarget && <KeySettingsModal keyId={selectedTarget} title={selectedChordEntry ? `${selectedTarget} chord action` : undefined} action={currentAction}
