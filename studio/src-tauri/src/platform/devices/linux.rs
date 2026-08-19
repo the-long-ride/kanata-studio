@@ -38,6 +38,9 @@ pub fn list() -> Result<Vec<KeyboardDevice>, PlatformError> {
                 interface_paths: Vec::new(),
                 layout,
                 manual_layout: None,
+                reported_key_count: None,
+                function_key_count: None,
+                keyboard_type: None,
             });
         }
     }
