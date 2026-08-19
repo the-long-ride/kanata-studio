@@ -1,4 +1,4 @@
-import { Toggle } from '../../components/Toggle';
+import { Switch } from '../../components/Switch';
 
 export function GeneralSettings({
   start,
@@ -13,8 +13,8 @@ export function GeneralSettings({
 }) {
   return <section>
     <h3>General</h3>
-    <Toggle checked={start} onChange={onStart} label="Start with system" />
-    <Toggle
+    <Switch checked={start} onChange={onStart} label="Start with system" />
+    <Switch
       checked={stopKanataOnQuit}
       onChange={onStopKanataOnQuit}
       label="Stop Kanata engine when Kanata Studio quits"
