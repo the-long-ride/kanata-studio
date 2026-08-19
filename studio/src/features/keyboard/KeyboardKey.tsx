@@ -27,7 +27,7 @@ export function KeyboardKey({
   return <button
     className={`keyboard-key ${selected ? 'selected' : ''} ${pressed ? 'pressed' : ''} ${inherited ? 'inherited' : ''} ${overridden ? 'overridden' : ''} ${hardwareControlled ? 'hardware-controlled' : ''}`}
     style={{ left: keyDef.x, top: keyDef.y, width: keyDef.w, height: keyDef.h }}
-    onClick={() => { if (!hardwareControlled) onSelect(); }}
+    onClick={onSelect}
     aria-disabled={hardwareControlled ? 'true' : undefined}
     title={title}
   >
