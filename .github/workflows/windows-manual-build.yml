@@ -2,6 +2,9 @@ name: Windows Manual Build
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feat/add-GUI
 
 jobs:
   build-windows:
