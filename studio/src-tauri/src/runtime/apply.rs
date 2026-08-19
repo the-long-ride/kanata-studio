@@ -44,8 +44,14 @@ struct PreparedEngine {
 }
 
 pub fn apply_current_context(state: &AppState) -> Result<(), RuntimeApplyError> {
+    state
+        .runtime_apply_gate
+        .run(|| apply_current_context_serialized(state))
+}
+
+fn apply_current_context_serialized(state: &AppState) -> Result<(), RuntimeApplyError> {
     if !state.settings.read().remapping_enabled {
-        return pause_all(state);
+        return pause_all_serialized(state);
     }
 
     let profiles = state.profiles.read().clone();
@@ -111,6 +117,10 @@ pub fn apply_current_context(state: &AppState) -> Result<(), RuntimeApplyError> 
 }
 
 pub fn pause_all(state: &AppState) -> Result<(), RuntimeApplyError> {
+    state.runtime_apply_gate.run(|| pause_all_serialized(state))
+}
+
+fn pause_all_serialized(state: &AppState) -> Result<(), RuntimeApplyError> {
     for status in state.supervisor.status() {
         if status.state != EngineState::Stopped {
             state
@@ -169,7 +179,6 @@ fn prepare_engines(
             )
             .map_err(|error| RuntimeApplyError::Compile(error.to_string()))?
         };
-
         let validation = validate_kbd(&compiled.text);
         if !validation.ok {
             return Err(RuntimeApplyError::InvalidConfig(
