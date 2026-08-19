@@ -80,7 +80,7 @@ describe('KeyboardCanvas', () => {
     expect(screen.queryByText('Mute')).toBeNull();
   });
 
-  it('shows Fn legends and blocks a hardware-controlled Fn key', () => {
+  it('shows Fn legends and selects a hardware-controlled Fn key for explanation', () => {
     const onSelect = vi.fn();
     render(
       <Canvas
@@ -96,7 +96,7 @@ describe('KeyboardCanvas', () => {
     const fn = screen.getByRole('button', { name: /^Fn$/ });
     expect(fn.getAttribute('aria-disabled')).toBe('true');
     fireEvent.click(fn);
-    expect(onSelect).not.toHaveBeenCalledWith('fn');
+    expect(onSelect).toHaveBeenCalledWith('fn');
   });
 });
 
