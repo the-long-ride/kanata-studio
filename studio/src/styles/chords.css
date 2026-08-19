@@ -130,6 +130,44 @@
   font-size: 12px;
 }
 
+.advanced-sidebar-content .chord-editor {
+  display: flex;
+  flex-direction: column;
+}
+
+.advanced-sidebar-content .chord-set-rail {
+  display: block;
+  border-right: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.advanced-sidebar-content .chord-set-list {
+  max-height: 112px;
+}
+
+.advanced-sidebar-content .chord-set-rail > .ui-button {
+  width: calc(100% - 16px);
+}
+
+.advanced-sidebar-content .chord-set-main {
+  overflow: visible;
+  padding: 10px;
+}
+
+.advanced-sidebar-content .chord-set-fields {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+
+.advanced-sidebar-content .chord-row {
+  grid-template-columns: minmax(0,1fr) 16px minmax(0,1fr);
+}
+
+.advanced-sidebar-content .chord-manual,
+.advanced-sidebar-content .chord-row > .ui-button {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 900px) {
   .chord-editor {
     grid-template-columns: 150px minmax(0,1fr);
