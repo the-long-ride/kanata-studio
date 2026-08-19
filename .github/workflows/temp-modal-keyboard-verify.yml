@@ -50,3 +50,18 @@ jobs:
       - name: Create dummy Kanata sidecar
         run: mkdir -p studio/src-tauri/binaries && touch studio/src-tauri/binaries/kanata-engine-x86_64-unknown-linux-gnu && chmod +x studio/src-tauri/binaries/kanata-engine-x86_64-unknown-linux-gnu
       - run: cargo test -p kanata-studio --lib
+
+  windows-rust-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - name: Create dummy Windows sidecars and resource
+        run: |
+          mkdir -p studio/src-tauri/binaries
+          touch studio/src-tauri/binaries/kanata-engine-x86_64-pc-windows-msvc.exe
+          touch studio/src-tauri/binaries/kanata-engine-interception-x86_64-pc-windows-msvc.exe
+          touch studio/src-tauri/binaries/interception.dll
+      - run: cargo check -p kanata-studio --lib --target x86_64-pc-windows-msvc
