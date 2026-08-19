@@ -23,6 +23,17 @@ struct RawKeyboardInterface {
     vendor_id: Option<u16>,
     product_id: Option<u16>,
     layout: KeyboardLayout,
+    reported_key_count: Option<u32>,
+    function_key_count: Option<u32>,
+    keyboard_type: Option<u32>,
+}
+
+#[derive(Debug, Clone)]
+struct KeyboardMetadata {
+    layout: KeyboardLayout,
+    reported_key_count: Option<u32>,
+    function_key_count: Option<u32>,
+    keyboard_type: Option<u32>,
 }
 
 pub fn list() -> Result<Vec<KeyboardDevice>, PlatformError> {
@@ -62,12 +73,16 @@ pub fn list() -> Result<Vec<KeyboardDevice>, PlatformError> {
             if let Some(path) = device_path(raw) {
                 let (vendor_id, product_id) = parse_vid_pid(&path);
                 let container_id = container_id_for_interface(&path).ok().flatten();
+                let metadata = detected_metadata(raw);
                 interfaces.push(RawKeyboardInterface {
                     path,
                     container_id,
                     vendor_id,
                     product_id,
-                    layout: detected_layout(raw),
+                    layout: metadata.layout,
+                    reported_key_count: metadata.reported_key_count,
+                    function_key_count: metadata.function_key_count,
+                    keyboard_type: metadata.keyboard_type,
                 });
             }
         }
@@ -113,12 +128,15 @@ fn group_interfaces(rows: Vec<RawKeyboardInterface>) -> Vec<KeyboardDevice> {
                 interface_paths,
                 layout,
                 manual_layout: None,
+                reported_key_count: rows.iter().find_map(|row| row.reported_key_count),
+                function_key_count: rows.iter().find_map(|row| row.function_key_count),
+                keyboard_type: rows.iter().find_map(|row| row.keyboard_type),
             }
         })
         .collect()
 }
 
-fn detected_layout(device: &RAWINPUTDEVICELIST) -> KeyboardLayout {
+fn detected_metadata(device: &RAWINPUTDEVICELIST) -> KeyboardMetadata {
     unsafe {
         let mut info = mem::zeroed::<RID_DEVICE_INFO>();
         info.cbSize = mem::size_of::<RID_DEVICE_INFO>() as u32;
@@ -130,16 +148,28 @@ fn detected_layout(device: &RAWINPUTDEVICELIST) -> KeyboardLayout {
             &mut size as PUINT,
         );
         if result == u32::MAX {
-            return KeyboardLayout::Unknown;
+            return KeyboardMetadata {
+                layout: KeyboardLayout::Unknown,
+                reported_key_count: None,
+                function_key_count: None,
+                keyboard_type: None,
+            };
         }
         let keyboard = info.u.keyboard();
-        if keyboard.dwType == 0x7 {
-            return KeyboardLayout::Jis;
-        }
-        match keyboard.dwNumberOfKeysTotal {
-            101 | 104 => KeyboardLayout::Ansi,
-            102 | 105 => KeyboardLayout::Iso,
-            _ => KeyboardLayout::Unknown,
+        let layout = if keyboard.dwType == 0x7 {
+            KeyboardLayout::Jis
+        } else {
+            match keyboard.dwNumberOfKeysTotal {
+                101 | 104 => KeyboardLayout::Ansi,
+                102 | 105 => KeyboardLayout::Iso,
+                _ => KeyboardLayout::Unknown,
+            }
+        };
+        KeyboardMetadata {
+            layout,
+            reported_key_count: Some(keyboard.dwNumberOfKeysTotal),
+            function_key_count: Some(keyboard.dwNumberOfFunctionKeys),
+            keyboard_type: Some(keyboard.dwType),
         }
     }
 }
@@ -216,6 +246,9 @@ mod tests {
             vendor_id: Some(vendor_id),
             product_id: Some(product_id),
             layout: KeyboardLayout::Ansi,
+            reported_key_count: None,
+            function_key_count: None,
+            keyboard_type: None,
         }
     }
 
