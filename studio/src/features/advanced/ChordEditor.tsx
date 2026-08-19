@@ -44,6 +44,7 @@ export function ChordEditor({ chordSets, layers, onChange, onSelect }: Props) {
       {chordSets.map((set, index) => <button
         key={`${set.name}-${index}`}
         className={openIndex === index ? 'active' : ''}
+        aria-label={set.name || 'Untitled set'}
         aria-pressed={openIndex === index}
         onClick={() => setOpenIndex(index)}
       >
