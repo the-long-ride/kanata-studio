@@ -226,7 +226,7 @@ impl EngineSupervisor for LocalSupervisor {
             .get(&id.0)
             .map(|engine| engine.port)
             .ok_or_else(|| EngineError::UnknownEngine(id.0.clone()))?;
-        KanataTcpClient::connect(port, Duration::from_millis(500))?.reload_file(config_path)
+        KanataTcpClient::reload_file_with_retry(port, config_path, Duration::from_secs(2))
     }
 
     fn stop(&self, id: &EngineId) -> Result<(), EngineError> {
