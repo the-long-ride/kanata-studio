@@ -23,6 +23,12 @@ pub struct KeyboardDevice {
     pub interface_paths: Vec<String>,
     pub layout: KeyboardLayout,
     pub manual_layout: Option<KeyboardLayout>,
+    #[serde(default)]
+    pub reported_key_count: Option<u32>,
+    #[serde(default)]
+    pub function_key_count: Option<u32>,
+    #[serde(default)]
+    pub keyboard_type: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
