@@ -128,12 +128,16 @@ fn group_interfaces(rows: Vec<RawKeyboardInterface>) -> Vec<KeyboardDevice> {
                 interface_paths,
                 layout,
                 manual_layout: None,
-                reported_key_count: rows.iter().find_map(|row| row.reported_key_count),
-                function_key_count: rows.iter().find_map(|row| row.function_key_count),
-                keyboard_type: rows.iter().find_map(|row| row.keyboard_type),
+                reported_key_count: max_nonzero(rows.iter().map(|row| row.reported_key_count)),
+                function_key_count: max_nonzero(rows.iter().map(|row| row.function_key_count)),
+                keyboard_type: max_nonzero(rows.iter().map(|row| row.keyboard_type)),
             }
         })
         .collect()
+}
+
+fn max_nonzero(values: impl Iterator<Item = Option<u32>>) -> Option<u32> {
+    values.flatten().filter(|value| *value > 0).max()
 }
 
 fn detected_metadata(device: &RAWINPUTDEVICELIST) -> KeyboardMetadata {
