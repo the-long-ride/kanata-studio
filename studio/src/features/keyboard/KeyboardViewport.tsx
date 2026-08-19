@@ -25,7 +25,7 @@ export function KeyboardViewport({
   children: ReactNode;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<DragState>();
+  const dragRef = useRef<DragState | undefined>(undefined);
   const previousMode = useRef<UiMode>(viewMode);
   const views = useRef<Record<UiMode, ViewState>>({
     Beginner: { zoom: 1, x: 0, y: 0 },
