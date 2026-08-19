@@ -79,9 +79,15 @@ export const keyboardPresets: Record<KeyboardVisualPreset, KeyboardPreset> = {
   '60': { id: '60', label: '60%', keys: replaceMenuWithFn(ansi.filter(item => !/^f\d+$/.test(item.id))), fnLegends: compactFnLegends, fnKey: { id: 'fn', remappable: false } },
 };
 
+function baseKeys(layout: KeyboardLayout): KeyGeometry[] {
+  return layout === 'Iso' ? iso : layout === 'Jis' ? jis : ansi;
+}
+
 export function presetKeys(preset: KeyboardVisualPreset | undefined, layout: KeyboardLayout): KeyboardPreset {
+  const base = baseKeys(layout);
+  if (preset === 'fullsize') return { ...keyboardPresets.fullsize, keys: [...base, ...navKeys, ...numpad] };
+  if (preset === 'tkl') return { ...keyboardPresets.tkl, keys: [...base, ...navKeys] };
   if (preset) return keyboardPresets[preset];
-  const base = layout === 'Iso' ? iso : layout === 'Jis' ? jis : ansi;
   return {
     id: 'generic',
     label: 'Generic Extended',
