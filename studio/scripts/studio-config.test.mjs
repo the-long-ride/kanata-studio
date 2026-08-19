@@ -37,6 +37,12 @@ test('custom title bar has permission for every window action it invokes', () =>
   }
 });
 
+test('Windows build workflow remains manual only', () => {
+  const workflow = read('../../.github/workflows/windows-manual-build.yml');
+  assert.match(workflow, /^on:\s*\n\s+workflow_dispatch:/m);
+  assert.ok(!/^\s+(push|pull_request|schedule):/m.test(workflow), 'Windows build must not run automatically');
+});
+
 test('onboarding persistence is separated from autostart and runtime activation', () => {
   const settings = read('../src-tauri/src/commands/settings.rs');
   const profiles = read('../src-tauri/src/commands/profiles.rs');
