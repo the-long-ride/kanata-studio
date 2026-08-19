@@ -1,28 +1,23 @@
 import { Minus, RotateCcw, Settings2, Square, Undo2, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
-import type { UiMode } from '../lib/types';
 import { IconButton } from '../components/IconButton';
 import { StatusDot } from '../components/StatusDot';
-import { ModeSwitch } from './ModeSwitch';
 import { closeWindow, minimizeWindow, startWindowDrag, toggleMaximizeWindow } from './windowControls';
 
-const DEFAULT_LEFT = 260;
+const DEFAULT_LEFT = 320;
 const DEFAULT_RIGHT = 340;
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
 type DragState = { side: 'left' | 'right'; x: number; left: number; right: number };
 
 export function AppShell({
-  mode, onMode, keyboardControl, rail, main, inspector,
+  rail, main, inspector,
   status = 'Running', onSettings, onUndo, onRestart,
   leftRailWidth = DEFAULT_LEFT, rightPaneWidth = DEFAULT_RIGHT, onPaneWidthsChange,
 }: {
-  mode: UiMode;
-  onMode: (mode: UiMode) => void;
-  keyboardControl?: ReactNode;
   rail: ReactNode;
   main: ReactNode;
-  inspector: ReactNode;
+  inspector?: ReactNode;
   status?: string;
   onSettings?: () => void;
   onUndo?: () => void;
@@ -36,7 +31,7 @@ export function AppShell({
     if (!drag.current || !onPaneWidthsChange) return;
     const delta = event.clientX - drag.current.x;
     if (drag.current.side === 'left') {
-      onPaneWidthsChange(clamp(drag.current.left + delta, 180, 420), drag.current.right);
+      onPaneWidthsChange(clamp(drag.current.left + delta, 260, 480), drag.current.right);
     } else {
       onPaneWidthsChange(drag.current.left, clamp(drag.current.right - delta, 260, 520));
     }
@@ -68,8 +63,6 @@ export function AppShell({
       >
         <span className="brand-logo" aria-hidden="true" /><span className="brand">Kanata Studio</span>
       </button>
-      {keyboardControl}
-      <ModeSwitch value={mode} onChange={onMode} />
       <div className="topbar-spacer" data-tauri-drag-region onDoubleClick={() => void toggleMaximizeWindow()} />
       {onUndo && <IconButton label="Undo last mapping" onClick={onUndo}><Undo2 size={15} /></IconButton>}
       {onRestart && <IconButton label="Restart Kanata engine" onClick={onRestart}><RotateCcw size={15} /></IconButton>}
@@ -82,9 +75,9 @@ export function AppShell({
       </div>
     </header>
     <div
-      className="workspace"
+      className={`workspace ${inspector ? 'with-inspector' : ''}`}
       style={{
-        '--left-rail-width': `${clamp(leftRailWidth, 180, 420)}px`,
+        '--left-rail-width': `${clamp(leftRailWidth, 260, 480)}px`,
         '--right-pane-width': `${clamp(rightPaneWidth, 260, 520)}px`,
       } as CSSProperties}
     >
@@ -97,14 +90,16 @@ export function AppShell({
         onDoubleClick={() => onPaneWidthsChange?.(DEFAULT_LEFT, rightPaneWidth)}
       />
       <main className="canvas">{main}</main>
-      <div
-        className="pane-splitter"
-        role="separator"
-        aria-label="Resize inspector sidebar"
-        onPointerDown={event => startResize('right', event)}
-        onDoubleClick={() => onPaneWidthsChange?.(leftRailWidth, DEFAULT_RIGHT)}
-      />
-      <aside className="inspector">{inspector}</aside>
+      {inspector && <>
+        <div
+          className="pane-splitter"
+          role="separator"
+          aria-label="Resize advanced sidebar"
+          onPointerDown={event => startResize('right', event)}
+          onDoubleClick={() => onPaneWidthsChange?.(leftRailWidth, DEFAULT_RIGHT)}
+        />
+        <aside className="inspector" data-testid="advanced-sidebar">{inspector}</aside>
+      </>}
     </div>
   </div>;
 }

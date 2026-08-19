@@ -18,22 +18,40 @@ afterEach(() => {
 });
 
 describe('AppShell', () => {
-  it('uses Beginner and Advanced labels and preserves shell state', () => {
-    let mode: 'Beginner' | 'Advanced' = 'Beginner';
-    const { rerender } = render(
-      <AppShell mode={mode} onMode={m => { mode = m; }} rail="rail" main="main" inspector="inspector" />,
+  it('keeps keyboard and mode controls out of the title bar', () => {
+    render(<Shell rail={<div>Sidebar controls</div>} main="main" />);
+    expect(screen.getByText('Sidebar controls')).toBeTruthy();
+    expect(screen.queryByText('Beginner')).toBeNull();
+    expect(screen.queryByText('Advanced')).toBeNull();
+  });
+
+  it('omits the advanced sidebar and splitter when no inspector is supplied', () => {
+    render(<Shell rail="rail" main="main" />);
+    expect(screen.queryByRole('separator', { name: 'Resize advanced sidebar' })).toBeNull();
+    expect(screen.queryByTestId('advanced-sidebar')).toBeNull();
+  });
+
+  it('renders an optional advanced sidebar and resets pane widths independently', () => {
+    const onPaneWidthsChange = vi.fn();
+    render(
+      <Shell
+        rail="rail"
+        main="main"
+        inspector={<div data-testid="advanced-content">advanced</div>}
+        leftRailWidth={360}
+        rightPaneWidth={410}
+        onPaneWidthsChange={onPaneWidthsChange}
+      />,
     );
-    expect(screen.getByText('Beginner')).toBeTruthy();
-    expect(screen.getByText('Advanced')).toBeTruthy();
-    fireEvent.click(screen.getByText('Advanced'));
-    rerender(
-      <AppShell mode={mode} onMode={m => { mode = m; }} rail="rail" main="main" inspector="inspector" />,
-    );
-    expect(screen.queryByText('I am keyboard wizard')).toBeNull();
+    expect(screen.getByTestId('advanced-content')).toBeTruthy();
+    fireEvent.doubleClick(screen.getByRole('separator', { name: 'Resize profile sidebar' }));
+    expect(onPaneWidthsChange).toHaveBeenLastCalledWith(320, 410);
+    fireEvent.doubleClick(screen.getByRole('separator', { name: 'Resize advanced sidebar' }));
+    expect(onPaneWidthsChange).toHaveBeenLastCalledWith(360, 340);
   });
 
   it('wires custom window controls and title drag behavior', () => {
-    render(<AppShell mode="Beginner" onMode={() => undefined} rail="rail" main="main" inspector="inspector" />);
+    render(<Shell rail="rail" main="main" />);
     fireEvent.click(screen.getByRole('button', { name: 'Minimize window' }));
     fireEvent.click(screen.getByRole('button', { name: 'Maximize window' }));
     fireEvent.click(screen.getByRole('button', { name: 'Close window' }));
@@ -44,25 +62,5 @@ describe('AppShell', () => {
     expect(windowControls.toggleMaximizeWindow).toHaveBeenCalledTimes(2);
     expect(windowControls.closeWindow).toHaveBeenCalledOnce();
     expect(windowControls.startWindowDrag).toHaveBeenCalled();
-  });
-
-  it('resets only the pane beside each separator', () => {
-    const onPaneWidthsChange = vi.fn();
-    render(
-      <Shell
-        mode="Beginner"
-        onMode={() => undefined}
-        rail="rail"
-        main="main"
-        inspector="inspector"
-        leftRailWidth={300}
-        rightPaneWidth={410}
-        onPaneWidthsChange={onPaneWidthsChange}
-      />,
-    );
-    fireEvent.doubleClick(screen.getByRole('separator', { name: 'Resize profile sidebar' }));
-    expect(onPaneWidthsChange).toHaveBeenLastCalledWith(260, 410);
-    fireEvent.doubleClick(screen.getByRole('separator', { name: 'Resize inspector sidebar' }));
-    expect(onPaneWidthsChange).toHaveBeenLastCalledWith(300, 340);
   });
 });

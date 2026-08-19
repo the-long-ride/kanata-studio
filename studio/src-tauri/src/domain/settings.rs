@@ -15,7 +15,7 @@ fn default_true() -> bool {
 }
 
 fn default_left_rail_width() -> u16 {
-    260
+    320
 }
 
 fn default_right_pane_width() -> u16 {
@@ -69,7 +69,7 @@ mod tests {
         }))
         .expect("legacy settings should deserialize");
 
-        assert_eq!(settings.left_rail_width, 260);
+        assert_eq!(settings.left_rail_width, 320);
         assert_eq!(settings.right_pane_width, 340);
     }
 }
