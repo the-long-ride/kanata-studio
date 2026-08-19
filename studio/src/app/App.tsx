@@ -209,41 +209,21 @@ export function App() {
     : undefined;
   const errorDialog = <RuntimeErrorDialog issue={runtimeIssue} busy={retrying} onRetry={() => void retryRuntimeIssue()} onLogs={() => void openLogs()} onDismiss={dismissRuntimeIssue} />;
   if (!state.settings.onboardingCompleted) return <><Onboarding devices={state.devices} capabilities={state.capabilities} settings={state.settings} busy={onboardingBusy} onFinish={onOnboarding} />{errorDialog}</>;
-
   const keyboardControl = <KeyboardSelector items={keyboard.catalog} selectedId={keyboard.selectedId} onSelect={id => { setActiveLayer('base'); setAdvancedPane('layers'); setSelectedKey(undefined); setSelectedChord(undefined); setPreview(undefined); void keyboard.select(id); }} onManage={() => setManagerOpen(true)} />;
   const profileRail = <ProfileRail profiles={scopedProfiles} selected={profile?.id ?? ''} keyboardName={keyboard.selected?.name} canCreate={Boolean(keyboard.selected?.configured)} onSelect={selectProfile} onCreate={() => setCreateOpen(true)} />;
   const closeMappingModal = () => { setSelectedKey(undefined); setSelectedChord(undefined); };
 
   return <>
-    <AppShell
-      rail={<PrimarySidebar keyboardControl={keyboardControl} mode={mode} onMode={onMode} profileRail={profileRail} />}
-      main={center}
-      inspector={advancedSidebar}
-      status={runtimeLabel(state)}
-      leftRailWidth={state.settings.leftRailWidth ?? 320}
-      rightPaneWidth={state.settings.rightPaneWidth ?? 340}
-      onPaneWidthsChange={onPaneWidthsChange}
-      onSettings={() => setSettingsOpen(true)}
-      onUndo={undoStack.length ? onUndo : undefined}
-      onRestart={() => void restartRuntime()}
-    />
+    <AppShell rail={<PrimarySidebar keyboardControl={keyboardControl} mode={mode} onMode={onMode} profileRail={profileRail} />} main={center} inspector={advancedSidebar}
+      status={runtimeLabel(state)} leftRailWidth={state.settings.leftRailWidth ?? 320} rightPaneWidth={state.settings.rightPaneWidth ?? 340}
+      onPaneWidthsChange={onPaneWidthsChange} onSettings={() => setSettingsOpen(true)} onUndo={undoStack.length ? onUndo : undefined} onRestart={() => void restartRuntime()} />
     {createOpen && <CreateProfileDialog onClose={() => setCreateOpen(false)} onCreate={input => void onCreate(input)} />}
     <KeyboardManagerDialog open={managerOpen} keyboard={keyboard.selected} items={keyboard.catalog} onClose={() => setManagerOpen(false)} onSetup={keyboard.setupSelected} onUpdate={keyboard.update} onCopy={keyboard.copyFrom} onRefresh={keyboard.refresh} />
     <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} state={state} keyboards={keyboard.catalog} onStart={value => void saveSetting({ startWithSystem: value })} onStopKanataOnQuit={value => void saveSetting({ stopKanataOnQuit: value })} onManageKeyboard={id => void manageKeyboard(id)} onUpdate={checkUpdate} />
-    {selectedTarget && <KeySettingsModal
-      keyId={selectedTarget}
-      title={selectedChordEntry ? `${selectedTarget} chord action` : undefined}
-      action={currentAction}
-      directAction={selectedKey ? direct[selectedKey] : undefined}
-      inheritedAction={selectedKey ? inherited[selectedKey] : undefined}
-      onChange={setAction}
-      onReset={selectedKey ? resetSelectedKey : undefined}
-      onClose={closeMappingModal}
-      status={applyState}
-      hardwareControlled={selectedHardwareControlled}
-      advanced={mode === 'Advanced' || Boolean(selectedChordEntry)}
-      stateLabel={selectedChordEntry ? 'Chord action' : undefined}
-    />}
+    {selectedTarget && <KeySettingsModal keyId={selectedTarget} title={selectedChordEntry ? `${selectedTarget} chord action` : undefined} action={currentAction}
+      directAction={selectedKey ? direct[selectedKey] : undefined} inheritedAction={selectedKey ? inherited[selectedKey] : undefined} onChange={setAction}
+      onReset={selectedKey ? resetSelectedKey : undefined} onClose={closeMappingModal} status={applyState} hardwareControlled={selectedHardwareControlled}
+      advanced={mode === 'Advanced' || Boolean(selectedChordEntry)} stateLabel={selectedChordEntry ? 'Chord action' : undefined} />}
     <ConvertToRawDialog open={convertOpen} onCancel={() => setConvertOpen(false)} onConvert={() => void convertRaw()} />
     {updateMessage && settingsOpen && <div className="sr-only" aria-live="polite">{updateMessage}</div>}
     {errorDialog}
