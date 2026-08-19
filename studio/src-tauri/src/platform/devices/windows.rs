@@ -272,4 +272,22 @@ mod tests {
         assert!(devices[0].id.starts_with("windows-"));
         assert_eq!(devices[0].interface_paths, vec!["path-a"]);
     }
+
+    #[test]
+    fn groups_keyboard_hardware_metadata() {
+        let rows = vec![RawKeyboardInterface {
+            path: "path-a".into(),
+            container_id: None,
+            vendor_id: Some(1),
+            product_id: Some(2),
+            layout: KeyboardLayout::Ansi,
+            reported_key_count: Some(104),
+            function_key_count: Some(12),
+            keyboard_type: Some(4),
+        }];
+        let devices = group_interfaces(rows);
+        assert_eq!(devices[0].reported_key_count, Some(104));
+        assert_eq!(devices[0].function_key_count, Some(12));
+        assert_eq!(devices[0].keyboard_type, Some(4));
+    }
 }
