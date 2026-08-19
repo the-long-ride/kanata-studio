@@ -18,20 +18,45 @@ export type KeyboardCatalogItem = {
   visualPresetOverride?: KeyboardVisualPreset | null;
   vendorId?: number | null;
   productId?: number | null;
+  reportedKeyCount?: number | null;
+  functionKeyCount?: number | null;
+  keyboardType?: number | null;
 };
 
-export function resolveVisualPreset(input: {
+type VisualPresetInput = {
   override?: KeyboardVisualPreset | null;
   name: string;
   layout: KeyboardLayout | string;
-}): KeyboardVisualPreset | undefined {
+  reportedKeyCount?: number | null;
+  functionKeyCount?: number | null;
+  keyboardType?: number | null;
+};
+
+export function resolveVisualPreset(input: VisualPresetInput): KeyboardVisualPreset | undefined {
   if (input.override) return input.override;
   const name = input.name.toLowerCase();
   if (/\b(tkl|tenkeyless)\b|keychron\s*k8\b/.test(name)) return 'tkl';
   if (/\b75\b|air\s*75|air75|keychron\s*k2\b|keychron\s*q1\b/.test(name)) return '75';
   if (/\b65\b|keychron\s*k6\b|keychron\s*q2\b/.test(name)) return '65';
   if (/\b60\b|poker|anne\s*pro/.test(name)) return '60';
+  if ([101, 102, 104, 105].includes(input.reportedKeyCount ?? -1)) return 'fullsize';
   return undefined;
+}
+
+function visualPresetForDevice(
+  device: KeyboardDevice | undefined,
+  name: string,
+  layout: KeyboardLayout | string,
+  override?: KeyboardVisualPreset | null,
+) {
+  return resolveVisualPreset({
+    override,
+    name,
+    layout,
+    reportedKeyCount: device?.reportedKeyCount,
+    functionKeyCount: device?.functionKeyCount,
+    keyboardType: device?.keyboardType,
+  });
 }
 
 export function buildKeyboardCatalog(
@@ -53,13 +78,17 @@ export function buildKeyboardCatalog(
       layout,
       layoutOverride: keyboard.layoutOverride ?? device?.manualLayout ?? null,
       visualPresetOverride: keyboard.visualPresetOverride ?? null,
-      visualPreset: resolveVisualPreset({
-        override: keyboard.visualPresetOverride,
-        name: detectedName,
+      visualPreset: visualPresetForDevice(
+        device,
+        detectedName,
         layout,
-      }),
+        keyboard.visualPresetOverride,
+      ),
       vendorId: device?.vendorId ?? keyboard.vendorId,
       productId: device?.productId ?? keyboard.productId,
+      reportedKeyCount: device?.reportedKeyCount,
+      functionKeyCount: device?.functionKeyCount,
+      keyboardType: device?.keyboardType,
     } satisfies KeyboardCatalogItem;
   });
   const fresh = [...detectedById.values()].map(device => ({
@@ -71,9 +100,12 @@ export function buildKeyboardCatalog(
     layout: device.layout,
     layoutOverride: device.manualLayout,
     visualPresetOverride: null,
-    visualPreset: resolveVisualPreset({ name: device.name, layout: device.layout }),
+    visualPreset: visualPresetForDevice(device, device.name, device.layout),
     vendorId: device.vendorId,
     productId: device.productId,
+    reportedKeyCount: device.reportedKeyCount,
+    functionKeyCount: device.functionKeyCount,
+    keyboardType: device.keyboardType,
   } satisfies KeyboardCatalogItem));
   return [
     ...saved.sort((a, b) => a.name.localeCompare(b.name)),
