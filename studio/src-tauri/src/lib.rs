@@ -105,6 +105,7 @@ pub fn run() {
                 topology_signature: parking_lot::RwLock::new(None),
                 last_runtime_error: parking_lot::RwLock::new(None),
                 identity_migrations: parking_lot::RwLock::new(identity_migrations),
+                runtime_apply_gate: runtime::RuntimeApplyGate::default(),
             });
 
             tray::build(app.handle())?;
