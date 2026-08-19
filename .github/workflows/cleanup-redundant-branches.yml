@@ -1,11 +1,9 @@
 name: Cleanup redundant branches
 
 on:
-  push:
+  pull_request:
     branches:
       - feat/add-GUI
-    paths:
-      - .github/workflows/cleanup-redundant-branches.yml
 
 permissions:
   contents: write
@@ -34,7 +32,8 @@ jobs:
               'tmp/studio-shell-verify-base',
               'tmp/windows-artifact',
               'tmp/windows-artifact-2',
-              'tmp/windows-build-trigger'
+              'tmp/windows-build-trigger',
+              'tmp/cleanup-trigger'
             ];
             for (const branch of branches) {
               try {
