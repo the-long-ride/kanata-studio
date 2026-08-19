@@ -1,0 +1,52 @@
+name: Temporary modal and keyboard verifier
+
+on:
+  pull_request:
+    branches:
+      - tmp/modal-keyboard-verify-base
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: studio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: studio/pnpm-lock.yaml
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm test
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: pnpm lint:lines
+      - run: pnpm test:lines
+      - run: pnpm test:rules
+      - run: pnpm test:config
+
+  rust-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  rust-studio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Tauri Linux dependencies
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - name: Create dummy Kanata sidecar
+        run: mkdir -p studio/src-tauri/binaries && touch studio/src-tauri/binaries/kanata-engine-x86_64-unknown-linux-gnu && chmod +x studio/src-tauri/binaries/kanata-engine-x86_64-unknown-linux-gnu
+      - run: cargo test -p kanata-studio --lib
